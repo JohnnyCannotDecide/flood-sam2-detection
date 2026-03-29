@@ -1,0 +1,163 @@
+{
+  "schema_version": "1.0",
+  "project": "flood_detection",
+  "input_summary": {
+    "image_count": 3,
+    "files": [
+      "d27.tif",
+      "d28.tif",
+      "d29.tif"
+    ],
+    "branch": "time_series_change_analysis"
+  },
+  "water_segmentation_results": [
+    {
+      "label": "d27",
+      "area_km2": 22.33235,
+      "contour_count": 235,
+      "components_count": 235,
+      "largest_component_px": 93882,
+      "mean_compactness": 0.393622498340265,
+      "mean_elongation": 2.8334855032820334,
+      "quality_metrics": {
+        "IoU": 0.5456782213109502,
+        "Precision": 0.6673592344737567,
+        "Recall": 0.7495473656681889,
+        "F1_Score": 0.7060696253430281,
+        "pred_area_km2": 22.33235,
+        "ref_area_km2": 19.8836,
+        "area_accuracy": 0.8768457422197188,
+        "reference_source": "pseudo_reference"
+      }
+    },
+    {
+      "label": "d28",
+      "area_km2": 73.4888,
+      "contour_count": 405,
+      "components_count": 405,
+      "largest_component_px": 259567,
+      "mean_compactness": 0.3522771260511086,
+      "mean_elongation": 2.4154882851363424,
+      "quality_metrics": {
+        "IoU": 0.42527766941363443,
+        "Precision": 0.4765477868736461,
+        "Recall": 0.7980976743656066,
+        "F1_Score": 0.596764656515801,
+        "pred_area_km2": 73.4888,
+        "ref_area_km2": 43.8805,
+        "area_accuracy": 0.32525153542006124,
+        "reference_source": "pseudo_reference"
+      }
+    },
+    {
+      "label": "d29",
+      "area_km2": 30.95975,
+      "contour_count": 209,
+      "components_count": 209,
+      "largest_component_px": 118333,
+      "mean_compactness": 0.376392070996676,
+      "mean_elongation": 2.3810102106282467,
+      "quality_metrics": {
+        "IoU": 0.34405090360514473,
+        "Precision": 0.3863677839775838,
+        "Recall": 0.7585301629224259,
+        "F1_Score": 0.5119611209401337,
+        "pred_area_km2": 30.95975,
+        "ref_area_km2": 15.769775,
+        "area_accuracy": 0.03676653598418489,
+        "reference_source": "pseudo_reference"
+      }
+    }
+  ],
+  "change_analysis": [
+    {
+      "from": "d27",
+      "to": "d28",
+      "persistent_km2": 11.1994,
+      "receding_km2": 8.286475,
+      "new_km2": 44.360625
+    },
+    {
+      "from": "d28",
+      "to": "d29",
+      "persistent_km2": 8.248925,
+      "receding_km2": 47.3111,
+      "new_km2": 19.198725
+    }
+  ],
+  "quality_assurance": {
+    "metrics_summary": {
+      "avg_IoU": 0.4383355981099098,
+      "avg_Precision": 0.5100916017749956,
+      "avg_Recall": 0.7687250676520737,
+      "avg_F1": 0.6049318009329876,
+      "avg_area_accuracy": 0.41295460454132166
+    },
+    "llm_quality_review": {
+      "mode": "rule_based_proxy",
+      "verdict": "待优化",
+      "confidence": 0.5569660900790745,
+      "reasons": [
+        "IoU=0.438",
+        "F1=0.605",
+        "面积准确率=0.413"
+      ],
+      "suggestions": [
+        "加强阴影抑制阈值，降低误检",
+        "引入标注样本进行面积偏差校准"
+      ]
+    }
+  },
+  "trend": {
+    "direction": "increasing",
+    "areas_km2": [
+      22.33235,
+      73.4888,
+      30.95975
+    ],
+    "delta_km2": [
+      51.15644999999999,
+      -42.52905
+    ],
+    "new_total_km2": 63.559349999999995,
+    "receding_total_km2": 55.597575000000006
+  },
+  "risk_assessment": {
+    "risk_score": 0.8631987343182229,
+    "warning_level": "高",
+    "summary": "当前风险等级为高，风险评分0.86"
+  },
+  "impact_scope_prediction": {
+    "estimated_impact_km2": 48.9659210074043,
+    "confidence": 0.7554658884105374
+  },
+  "decision_support": {
+    "expert_opinion": "当前风险等级为高，风险评分0.86",
+    "warning_recommendations": [],
+    "response_actions": []
+  },
+  "expert_model_output": {
+    "mode": "rule_based_proxy",
+    "trend": {
+      "direction": "increasing",
+      "areas_km2": [
+        22.33235,
+        73.4888,
+        30.95975
+      ],
+      "delta_km2": [
+        51.15644999999999,
+        -42.52905
+      ],
+      "new_total_km2": 63.559349999999995,
+      "receding_total_km2": 55.597575000000006
+    },
+    "risk": "当前风险等级为高，风险评分0.86",
+    "warning_level": "高",
+    "impact_scope": {
+      "estimated_impact_km2": 48.9659210074043,
+      "confidence": 0.7554658884105374
+    },
+    "recommendations": []
+  }
+}
