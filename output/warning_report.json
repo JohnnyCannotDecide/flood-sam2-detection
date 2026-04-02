@@ -46,7 +46,7 @@
         "Precision": 1.0,
         "Recall": 0.743,
         "F1_Score": 0.852,
-        "pred_area_km2": 76.5218,
+        "pred_area_km2": 76.5217,
         "ref_area_km2": -1.0,
         "area_accuracy": 0.5,
         "coverage_ratio": 0.0428,
@@ -103,18 +103,17 @@
       "avg_area_accuracy": 0.5
     },
     "llm_quality_review": {
-      "verdict": "Low Credibility",
-      "confidence": 0.95,
+      "verdict": "不可信",
+      "confidence": 0.9,
       "reasons": [
-        "Precision is perfect (1.0), indicating the model is overly conservative and produces no false positives, but this suggests a high risk of missing actual water bodies.",
-        "Recall is relatively low (0.727), meaning approximately 27% of water pixels are not detected (false negatives).",
-        "Area Accuracy is critically low (0.5), showing a massive discrepancy between the predicted water area and the reference area, indicating severe underestimation.",
-        "The high IoU (0.80) is misleading in this context because it is driven by high precision, while the overall area representation is highly inaccurate."
+        "平均精确率为1.0极不正常，表明模型过于保守，仅提取了置信度极高的水体，导致大量漏检。",
+        "平均召回率仅为0.727，结合面积精度仅为0.5，说明存在严重的欠分割现象，提取的水体总面积严重不足。",
+        "指标间存在逻辑矛盾（若Precision为1.0，IoU理论上应接近Recall），暗示数据可能存在异常或评估方法有误。"
       ],
       "suggestions": [
-        "Lower the classification threshold to improve Recall and Area Accuracy.",
-        "Review the reference data generation method (if automated) to ensure it is not overestimating water, though the current model is clearly underestimating.",
-        "Apply post-processing techniques such as morphological dilation to capture missed edge pixels and narrow rivers."
+        "降低分类阈值，尝试召回更多水体区域。",
+        "检查训练样本是否覆盖了浑浊水体、阴影区水体及细小河流等难分样本。",
+        "重新校验面积精度的计算逻辑，确保其与IoU、Recall的定义一致。"
       ],
       "mode": "external_llm"
     }
@@ -143,30 +142,30 @@
     "confidence": 0.7250000000000001
   },
   "decision_support": {
-    "expert_opinion": "当前洪水风险极高，新增淹没面积68.24平方公里，严重威胁沿河低洼地带农田、村庄及基础设施安全。",
+    "expert_opinion": "洪水风险极高，受威胁区域主要为低洼地带及沿河居民区，规模约55.67平方公里，需防范内涝及人员被困。",
     "warning_recommendations": [
-      "立即启动一级响应，组织沿河及低洼危险区域群众紧急转移。",
-      "向重点区域前置冲锋舟、排水泵及生活物资，保障抢险救灾需求。",
-      "对积水严重路段实施封闭管控，疏导交通，确保救援通道畅通。",
-      "持续监测水情变化，加密巡查频次，防范次生灾害发生。"
+      "立即组织低洼地区及危险区域群众进行紧急转移安置，确保不落一人。",
+      "调配冲锋舟、救生衣、排水泵等抢险物资至重点区域，做好救援准备。",
+      "对积水严重路段实施交通管制，设立警示标识，保障救援通道畅通。",
+      "加强对重点堤坝、水库的24小时巡查监测，及时发现并处置险情。"
     ],
     "response_actions": [
-      "立即启动一级响应，组织沿河及低洼危险区域群众紧急转移。",
-      "向重点区域前置冲锋舟、排水泵及生活物资，保障抢险救灾需求。",
-      "对积水严重路段实施封闭管控，疏导交通，确保救援通道畅通。",
-      "持续监测水情变化，加密巡查频次，防范次生灾害发生。"
+      "立即组织低洼地区及危险区域群众进行紧急转移安置，确保不落一人。",
+      "调配冲锋舟、救生衣、排水泵等抢险物资至重点区域，做好救援准备。",
+      "对积水严重路段实施交通管制，设立警示标识，保障救援通道畅通。",
+      "加强对重点堤坝、水库的24小时巡查监测，及时发现并处置险情。"
     ]
   },
   "expert_model_output": {
-    "trend": "洪水呈扩张态势，整体淹没范围增加，需警惕水位反复。",
-    "risk": "当前洪水风险极高，新增淹没面积68.24平方公里，严重威胁沿河低洼地带农田、村庄及基础设施安全。",
+    "trend": "洪水呈扩张趋势，受持续降雨影响，水体面积显著增加，整体态势严峻。",
+    "risk": "洪水风险极高，受威胁区域主要为低洼地带及沿河居民区，规模约55.67平方公里，需防范内涝及人员被困。",
     "warning_level": "红色",
-    "impact_scope": "预估影响范围约55.67平方公里，主要涉及沿河低洼区域，受威胁人口密集，存在房屋进水和道路中断风险。",
+    "impact_scope": "预估受影响范围约55.67平方公里，主要覆盖河道两侧及下游低洼区域。受灾人口风险较高，可能涉及大量居民紧急转移，需防范次生灾害。",
     "recommendations": [
-      "立即启动一级响应，组织沿河及低洼危险区域群众紧急转移。",
-      "向重点区域前置冲锋舟、排水泵及生活物资，保障抢险救灾需求。",
-      "对积水严重路段实施封闭管控，疏导交通，确保救援通道畅通。",
-      "持续监测水情变化，加密巡查频次，防范次生灾害发生。"
+      "立即组织低洼地区及危险区域群众进行紧急转移安置，确保不落一人。",
+      "调配冲锋舟、救生衣、排水泵等抢险物资至重点区域，做好救援准备。",
+      "对积水严重路段实施交通管制，设立警示标识，保障救援通道畅通。",
+      "加强对重点堤坝、水库的24小时巡查监测，及时发现并处置险情。"
     ],
     "mode": "external_llm"
   }
