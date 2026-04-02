@@ -171,6 +171,10 @@ python flood_detection.py --input-dir "data" --post-dilate-k 3
 
 可直接双击 `output/index.html` 浏览。
 
+<img width="1901" height="737" alt="image" src="https://github.com/user-attachments/assets/123a2c28-1be8-4b9b-a534-67fbbcb1766a" />
+<img width="1435" height="829" alt="image" src="https://github.com/user-attachments/assets/716927ea-4661-4195-9796-ff3712cc4e20" />
+<img width="1526" height="797" alt="image" src="https://github.com/user-attachments/assets/178b18cd-a2d7-4204-9d8c-7de5aa0807e6" />
+
 ## 常见问题
 
 - **Q: 程序在“洪水预警分析”阶段停很久？**  
