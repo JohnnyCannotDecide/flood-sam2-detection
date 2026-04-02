@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-TEXGHC7V34"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-TEXGHC7V34');
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Impeccable: The missing upgrade to Anthropic's frontend-design skill</title>
+  <meta name="description" content="1 skill, 20 commands, and curated anti-patterns for impeccable frontend design. Works with Cursor, Claude Code, Gemini CLI, and Codex CLI.">
+  <meta name="theme-color" content="#fafafa">
+  <link rel="canonical" href="https://impeccable.style">
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://impeccable.style">
+  <meta property="og:title" content="Impeccable: Design skills for AI harnesses">
+  <meta property="og:description" content="1 skill, 20 commands, and curated anti-patterns for impeccable frontend design. Works with Cursor, Claude Code, Gemini CLI, and Codex CLI.">
+  <meta property="og:image" content="https://impeccable.style/og-image.jpg">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@pbakaus">
+  <meta name="twitter:creator" content="@pbakaus">
+  <meta name="twitter:title" content="Impeccable: Design skills for AI harnesses">
+  <meta name="twitter:description" content="1 skill, 20 commands, and curated anti-patterns for impeccable frontend design.">
+  <meta name="twitter:image" content="https://impeccable.style/og-image.jpg">
+
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=Instrument+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/main.css">
+  
+  </head>
+<body>
+  <!-- Skip to main content link for keyboard users -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- Grain Overlay -->
+  <div class="grain-overlay" aria-hidden="true"></div>
+
+  <!-- Sticky Section Nav -->
+  <nav class="section-nav" id="section-nav" aria-label="Page sections">
+    <a href="#antidote" class="section-nav-item" data-section="antidote"><span class="section-nav-num">01</span><span class="section-nav-label">Anti-Patterns</span></a>
+    <a href="#solution" class="section-nav-item" data-section="solution"><span class="section-nav-num">02</span><span class="section-nav-label">Framework</span></a>
+    <a href="#commands-section" class="section-nav-item" data-section="commands-section"><span class="section-nav-num">03</span><span class="section-nav-label">Commands</span></a>
+    <a href="#downloads" class="section-nav-item" data-section="downloads"><span class="section-nav-num">04</span><span class="section-nav-label">Install</span></a>
+    <a href="#changelog" class="section-nav-item" data-section="changelog"><span class="section-nav-num">05</span><span class="section-nav-label">Changelog</span></a>
+    <a href="#faq" class="section-nav-item" data-section="faq"><span class="section-nav-num">06</span><span class="section-nav-label">FAQ</span></a>
+  </nav>
+
+  <!-- 1. HERO - Combined with Problem Section -->
+  <section id="hero" class="hero-combined">
+    <a href="https://github.com/pbakaus/impeccable" class="github-link" aria-label="View on GitHub">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      <span class="github-stars">13.3k</span>
+    </a>
+    <div class="hero-combined-container">
+      <!-- Left: Title & Info -->
+      <div class="hero-combined-left">
+        <h1 class="hero-title-combined">Impeccable</h1>
+        <p class="hero-tagline-combined">Design fluency for AI harnesses</p>
+
+        <p class="hero-hook-text">Great design prompts require design vocabulary. Most people don't have it. You can't ask for "more vertical rhythm" if you've never used those words. Impeccable gives you commands that put designer language in your hands.</p>
+
+        <div class="hero-included-box">
+          <span class="hero-included-title">What's included</span>
+          <div class="hero-included-items">
+            <span>Enhanced <em>frontend-design</em> skill + anti-patterns</span>
+            <span class="hero-included-sep">·</span>
+            <span>20 design skills: /polish, /audit, /typeset, /overdrive...</span>
+          </div>
+        </div>
+
+        <div class="hero-cta-group">
+          <a href="#downloads" class="hero-cta-combined">Get Started</a>
+          <div class="hero-logos-inline">
+            <span class="hero-logos-label">Works with</span>
+            <div class="hero-logos-row">
+              <span class="hero-logo-icon has-tooltip" data-tooltip="Cursor"><img src="assets/cursor-logo.png" alt="Cursor" width="24" height="24" loading="lazy"></span>
+              <span class="hero-logo-icon has-tooltip" data-tooltip="Claude Code"><img src="assets/claude-logo.png" alt="Claude Code" width="24" height="24" loading="lazy"></span>
+              <span class="hero-logo-icon has-tooltip" data-tooltip="Gemini CLI"><img src="assets/gemini-logo.png" alt="Gemini CLI" width="20" height="20" loading="lazy"></span>
+              <span class="hero-logo-icon has-tooltip" data-tooltip="Codex CLI"><img src="assets/openai-logo.png" alt="Codex CLI" width="20" height="20" loading="lazy"></span>
+              <span class="hero-logo-icon has-tooltip" data-tooltip="VS Code Copilot"><img src="assets/github-logo.png" alt="VS Code Copilot" width="20" height="20" loading="lazy"></span>
+              <span class="hero-logo-icon has-tooltip" data-tooltip="Antigravity"><img src="assets/antigravity-logo.png" alt="Antigravity" width="20" height="20" loading="lazy"></span>
+              <span class="hero-logo-icon has-tooltip" data-tooltip="Kiro"><img src="assets/kiro-logo.png" alt="Kiro" width="20" height="20" loading="lazy"></span>
+              <span class="hero-logo-icon has-tooltip" data-tooltip="OpenCode"><img src="assets/opencode-logo.png" alt="OpenCode" width="20" height="20" loading="lazy"></span>
+              <span class="hero-logo-icon has-tooltip" data-tooltip="Pi"><img src="assets/pi-logo.svg" alt="Pi" width="20" height="20" loading="lazy" style="background:#1a1a1a;border-radius:50%;padding:3px"></span>
+            </div>
+          </div>
+        </div>
+        <p class="hero-version-link"><a href="#changelog">v1.6.0 — Trae support, scoring for /critique and /audit, build overhaul</a></p>
+      </div>
+
+      <!-- Right: Before/After Demo -->
+      <div class="hero-combined-right">
+        <div class="split-comparison" id="lens-comparison">
+          <div class="split-container">
+            <!-- Before: AI Slop -->
+            <div class="split-before">
+              <span class="split-badge split-badge--before">Before</span>
+              <div class="slop-card">
+                <div class="slop-header">
+                  <div class="slop-avatar"></div>
+                  <div class="slop-text">
+                    <div class="slop-title">Welcome to Our Platform</div>
+                    <div class="slop-subtitle">The best solution for your needs</div>
+                  </div>
+                </div>
+                <p class="slop-body">Lorem ipsum dolor sit amet, consectetur adipiscing elit. This is generic placeholder text.</p>
+                <button class="slop-button">Get Started</button>
+              </div>
+              <!-- Callout labels pointing to issues -->
+              <div class="slop-callouts">
+                <span class="slop-callout" data-point="font">Inter font (again)</span>
+                <span class="slop-callout" data-point="gradient">Purple gradient</span>
+                <span class="slop-callout" data-point="copy">Generic copy</span>
+                <span class="slop-callout" data-point="rounded">Cards on cards</span>
+              </div>
+            </div>
+            <!-- After: Impeccable (shown through split) -->
+            <div class="split-after">
+              <span class="split-badge split-badge--after">After</span>
+              <div class="impeccable-card">
+                <p class="impeccable-eyebrow">Introducing</p>
+                <h3 class="impeccable-title">Thoughtful Design</h3>
+                <p class="impeccable-body">Every element serves a purpose. Hierarchy guides the eye. Whitespace breathes.</p>
+                <button class="impeccable-button">Explore</button>
+              </div>
+            </div>
+            <!-- The Divider -->
+            <div class="split-divider"></div>
+          </div>
+          <div class="split-labels">
+            <div class="split-label-item" data-point="before">
+              <span class="split-label-dot"></span>
+              <span>Generic AI Output</span>
+            </div>
+            <div class="split-label-item" data-point="after">
+              <span class="split-label-dot split-label-dot--accent"></span>
+              <span>With Design Skills</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <main class="site-content" id="main-content">
+
+    <!-- 2. THE ANTIDOTE - Patterns & Anti-Patterns -->
+    <section class="antidote-section" id="antidote">
+      <div class="section-header" data-reveal>
+        <span class="section-number">01</span>
+        <h2 class="section-title">The Antidote</h2>
+      </div>
+      <div class="antidote-content">
+        <p class="section-lead" data-reveal>Anthropic's original frontend-design skill laid the foundation. Impeccable builds on it with curated patterns and anti-patterns across typography, color, layout, motion, and more.</p>
+
+        <!-- Patterns by category with tabs -->
+        <div class="patterns-categories" id="patterns-categories">
+          <!-- Rendered by JS -->
+        </div>
+
+        <p class="contribute-inline">Missing something? <a href="https://github.com/pbakaus/impeccable/issues/new?labels=pattern&title=Pattern%20suggestion%3A%20">Suggest a pattern &rarr;</a></p>
+      </div>
+    </section>
+
+    <!-- 3. THE SOLUTION - Two-part system -->
+    <section class="solution-section" id="solution">
+      <div class="section-header" data-reveal>
+        <span class="section-number">02</span>
+        <h2 class="section-title">The Framework</h2>
+      </div>
+      <div class="solution-content">
+        <p class="section-lead" data-reveal>One comprehensive skill with deep expertise, plus 20 commands that form the language of design.</p>
+
+        <div class="solution-visual-interactive" id="framework-viz-container" data-reveal>
+          <!-- Subway map generated by JS -->
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 4. COMMANDS - Glass Terminal -->
+    <section class="commands-section" id="commands-section">
+      <div class="section-header" data-reveal>
+        <span class="section-number">03</span>
+        <h2 class="section-title">Commands in Action</h2>
+        <p class="section-subtitle">Interactive demos for every command <a href="/cheatsheet" class="cheatsheet-link">View cheatsheet &rarr;</a></p>
+      </div>
+
+      <div class="commands-gallery">
+          <!-- Rendered by JS -->
+      </div>
+    </section>
+
+
+    <!-- 5. INSTALL -->
+    <section class="platforms-section" id="downloads">
+      <div class="section-header" data-reveal>
+        <span class="section-number">04</span>
+        <h2 class="section-title">Get Started</h2>
+        <p class="section-subtitle">Two steps to impeccable design.</p>
+      </div>
+
+      <div class="install-steps">
+        <!-- Step 1: Install -->
+        <div class="install-step" data-reveal>
+          <div class="install-step-header">
+            <span class="install-step-number">1</span>
+            <div class="install-step-meta">
+              <h3 class="install-step-title">Install the skills</h3>
+              <p class="install-step-desc">One command. Every provider.</p>
+            </div>
+          </div>
+
+          <!-- Primary: npx command -->
+          <div class="install-terminal">
+            <div class="glass-terminal">
+              <div class="terminal-header">
+                <span class="terminal-dot red"></span>
+                <span class="terminal-dot yellow"></span>
+                <span class="terminal-dot green"></span>
+                <span class="terminal-title">install</span>
+              </div>
+              <div class="terminal-body">
+                <div class="install-terminal-row">
+                  <div class="install-terminal-cmd">
+                    <span class="terminal-prompt">$</span>
+                    <code>npx skills add pbakaus/impeccable</code>
+                    <button class="copy-btn" aria-label="Copy command" data-copy="npx skills add pbakaus/impeccable">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
+                      </svg>
+                    </button>
+                  </div>
+                  <span class="install-terminal-note">Works with Cursor, Claude Code, Gemini CLI, Codex CLI, and more. Auto-detects your AI harness.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Alternatives (collapsible) -->
+          <details class="install-alternatives">
+            <summary class="install-alternatives-toggle">Other install methods</summary>
+            <div class="install-alternatives-content">
+              <div class="install-alt-method">
+                <span class="install-alt-label">Claude Code plugin</span>
+                <div class="install-terminal-cmd">
+                  <span class="terminal-prompt">$</span>
+                  <code>/plugin marketplace add pbakaus/impeccable</code>
+                  <button class="copy-btn" aria-label="Copy command" data-copy="/plugin marketplace add pbakaus/impeccable">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
+                    </svg>
+                  </button>
+                </div>
+                <span class="install-alt-note">Then open <code>/plugin</code> to install from Discover tab</span>
+              </div>
+              <div class="install-alt-divider"></div>
+              <div class="install-alt-method">
+                <span class="install-alt-label">Manual download</span>
+                <span class="install-alt-note">Contains all provider directories. Extract to your project root.</span>
+                <div class="install-prefix-options">
+                  <label class="install-prefix-option" data-prefix="default">
+                    <input type="radio" name="prefix-choice" value="default" checked />
+                    <div class="install-prefix-option-content">
+                      <span class="install-prefix-option-label">Default names</span>
+                      <span class="install-prefix-option-examples"><code>/polish</code> <code>/audit</code> <code>/typeset</code></span>
+                    </div>
+                  </label>
+                  <div class="install-prefix-option-wrap">
+                    <label class="install-prefix-option" data-prefix="prefixed">
+                      <input type="radio" name="prefix-choice" value="prefixed" />
+                      <div class="install-prefix-option-content">
+                        <span class="install-prefix-option-label">Prefixed with <code>/i-</code></span>
+                        <span class="install-prefix-option-examples"><code>/i-polish</code> <code>/i-audit</code> <code>/i-typeset</code></span>
+                      </div>
+                    </label>
+                    <span class="install-prefix-reason">Avoids conflicts with built-in commands or other skill packs</span>
+                  </div>
+                </div>
+                <div class="install-alt-download">
+                  <button class="btn btn-primary" data-bundle="universal" aria-label="Download universal zip" id="download-zip-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                    </svg>
+                    <span>Download universal zip</span>
+                  </button>
+                </div>
+                <input type="checkbox" id="prefix-toggle" class="sr-only" />
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <!-- Step 2: Subscribe -->
+        <div class="install-step" data-reveal>
+          <div class="install-step-header">
+            <span class="install-step-number">2</span>
+            <div class="install-step-meta">
+              <h3 class="install-step-title">Stay up to date</h3>
+              <p class="install-step-desc">New skills, pattern updates, and design tips.</p>
+            </div>
+          </div>
+          <div class="install-subscribe">
+            <iframe src="https://impeccablestyle.substack.com/embed" width="100%" height="150" style="border: 1px solid #e8e4df; border-radius: 8px; background: white;" frameborder="0" scrolling="no"></iframe>
+          </div>
+        </div>
+      </div>
+
+      <p class="download-tip" data-reveal>Keep the <a href="/cheatsheet">command cheatsheet</a> handy for quick reference. To update skills, run <code>npx skills update</code>.</p>
+    </section>
+
+    <!-- 5. CHANGELOG -->
+    <section class="changelog-section" id="changelog">
+      <div class="section-header" data-reveal>
+        <span class="section-number">05</span>
+        <h2 class="section-title">What's New</h2>
+      </div>
+
+      <div class="changelog-list" data-reveal>
+        <div class="changelog-entry">
+          <div class="changelog-version-header">
+            <span class="changelog-version">v1.6.0</span>
+            <span class="changelog-date">March 24, 2026</span>
+          </div>
+          <ul class="changelog-items">
+            <li>New provider: <strong>Trae</strong> (China + International)</li>
+            <li><code>/critique</code> now scores against Nielsen's 10 heuristics, tests with persona archetypes, and assesses cognitive load</li>
+            <li><code>/audit</code> now scores 5 dimensions with P0-P3 severity ratings and structured action plans</li>
+            <li>Improved skill descriptions for better agent auto-discovery</li>
+            <li>Fixed invalid YAML frontmatter that broke GitHub preview and Codex loading (<a href="https://github.com/pbakaus/impeccable/issues/67">#67</a>)</li>
+            <li>Codex CLI now uses correct <code>$</code> prefix for command references</li>
+          </ul>
+        </div>
+
+        <details class="changelog-older">
+          <summary class="changelog-older-toggle">View older releases</summary>
+          <div class="changelog-older-entries">
+            <div class="changelog-entry">
+              <div class="changelog-version-header">
+                <span class="changelog-version">v1.5.1</span>
+                <span class="changelog-date">March 17, 2026</span>
+              </div>
+              <ul class="changelog-items">
+                <li><code>/typeset</code> now recommends fixed type scales for app UIs, reserving fluid typography for marketing/content pages</li>
+              </ul>
+            </div>
+
+            <div class="changelog-entry">
+              <div class="changelog-version-header">
+                <span class="changelog-version">v1.5.0</span>
+                <span class="changelog-date">March 16, 2026</span>
+              </div>
+              <ul class="changelog-items">
+                <li>3 new skills: <code>/typeset</code> (fix typography), <code>/arrange</code> (fix layout & spacing), <code>/overdrive</code> (technically extraordinary effects, beta)</li>
+                <li>Skills now auto-gather design context via <code>.impeccable.md</code> — run <code>/teach-impeccable</code> once, all skills benefit</li>
+                <li>Deep linking to commands (<code>#cmd-overdrive</code>, etc.)</li>
+              </ul>
+            </div>
+
+            <div class="changelog-entry">
+              <div class="changelog-version-header">
+                <span class="changelog-version">v1.3.0</span>
+                <span class="changelog-date">March 12, 2026</span>
+              </div>
+              <ul class="changelog-items">
+                <li>Added OpenCode provider support</li>
+                <li>Added Pi provider support</li>
+                <li>Recategorized <code>/onboard</code> as an enhancement command</li>
+              </ul>
+            </div>
+
+            <div class="changelog-entry">
+              <div class="changelog-version-header">
+                <span class="changelog-version">v1.2.0</span>
+                <span class="changelog-date">March 5, 2026</span>
+              </div>
+              <ul class="changelog-items">
+                <li>Added Kiro support (<code>.kiro/skills/</code>)</li>
+                <li>Restored prefix toggle — download <code>i-</code> prefixed bundles to avoid naming conflicts</li>
+                <li>Audit and critique skills only suggest real, installed commands</li>
+              </ul>
+            </div>
+
+            <div class="changelog-entry">
+              <div class="changelog-version-header">
+                <span class="changelog-version">v1.1.0</span>
+                <span class="changelog-date">March 4, 2026</span>
+              </div>
+              <ul class="changelog-items">
+                <li>Unified skills architecture — commands are now skills with <code>user-invocable: true</code></li>
+                <li>Added VS Code Copilot and Google Antigravity support (<code>.agents/skills/</code>)</li>
+                <li>New install flow: <code>npx skills add</code> as primary, universal ZIP as fallback</li>
+                <li>Added universal ZIP containing all 5 provider directories</li>
+                <li>Renamed <code>/simplify</code> to <code>/distill</code> to avoid Claude Code conflict</li>
+              </ul>
+            </div>
+
+            <div class="changelog-entry">
+              <div class="changelog-version-header">
+                <span class="changelog-version">v1.0.0</span>
+                <span class="changelog-date">February 28, 2026</span>
+              </div>
+              <ul class="changelog-items">
+                <li>Initial release with enhanced frontend-design skill</li>
+                <li>17 design commands: /polish, /audit, /distill, /bolder, and more</li>
+                <li>Support for Cursor, Claude Code, Gemini CLI, and Codex CLI</li>
+                <li>Interactive command cheatsheet</li>
+              </ul>
+            </div>
+          </div>
+        </details>
+      </div>
+
+    </section>
+
+    <!-- 6. FAQ -->
+    <section class="faq-section" id="faq">
+      <div class="section-header" data-reveal>
+        <span class="section-number">06</span>
+        <h2 class="section-title">Frequently Asked Questions</h2>
+      </div>
+
+      <div class="faq-list" data-reveal>
+        <details class="faq-item">
+          <summary class="faq-question">Where do I put the downloaded files?</summary>
+          <div class="faq-answer">
+            <p>The easiest way is <code>npx skills add pbakaus/impeccable</code> — it auto-detects your AI harness and places files correctly.</p>
+            <p>If you downloaded the <strong>universal ZIP</strong>, extract it to your <strong>project root</strong> (same level as your <code>package.json</code> or <code>src/</code> folder). It creates hidden folders for each supported tool: <code>.cursor/</code>, <code>.claude/</code>, <code>.gemini/</code>, <code>.codex/</code>, and <code>.agents/</code>.</p>
+            <p>Project-level installation takes precedence and lets you version control your skills.</p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-question">How do I update to the latest version?</summary>
+          <div class="faq-answer">
+            <ul>
+              <li><strong>All tools:</strong> <code>npx skills update</code> (or <code>npx skills check</code> to see what's new first)</li>
+              <li><strong>Claude Code plugin:</strong> Open <code>/plugin</code>, go to the Discover tab, and update from there</li>
+              <li><strong>Manual ZIP:</strong> Download the latest ZIP from above and extract to your project root, overwriting existing files</li>
+            </ul>
+            <p>Your <code>.impeccable.md</code> design context file (created by <code>/teach-impeccable</code>) is never overwritten — your project context is preserved across updates.</p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-question">Commands or skills aren't appearing. What do I do?</summary>
+          <div class="faq-answer">
+            <p><strong>For commands:</strong> Type <code>/</code> in your AI harness and look for commands like <code>/audit</code>, <code>/polish</code>, etc. If they don't appear, double-check the files are in the correct location.</p>
+            <p><strong>For skills:</strong> Skills are applied automatically when relevant. To verify, explicitly mention "use the frontend-design skill" in your prompt—this forces the AI to acknowledge and apply it.</p>
+            <p><strong>Tool-specific setup:</strong></p>
+            <ul>
+              <li><strong>Cursor:</strong> Requires Nightly channel + Agent Skills enabled in Settings → Rules</li>
+              <li><strong>Gemini CLI:</strong> Requires <code>@google/gemini-cli@preview</code> + Skills enabled via <code>/settings</code></li>
+            </ul>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-question">I'm new to AI harnesses. Where do I start?</summary>
+          <div class="faq-answer">
+            <p>Skills and commands are intermediate features. If you're just getting started, learn the basics first:</p>
+            <ul>
+              <li><strong>Claude Code:</strong> <a href="https://docs.anthropic.com/en/docs/claude-code" target="_blank" rel="noopener">Official Documentation</a></li>
+              <li><strong>Cursor:</strong> <a href="https://docs.cursor.com" target="_blank" rel="noopener">Cursor Docs</a></li>
+              <li><strong>Gemini CLI:</strong> <a href="https://geminicli.com/docs/" target="_blank" rel="noopener">Gemini CLI Docs</a></li>
+              <li><strong>Codex CLI:</strong> <a href="https://github.com/openai/codex" target="_blank" rel="noopener">Codex GitHub</a></li>
+            </ul>
+            <p>Once you're comfortable with basic prompting and code generation, come back and give Impeccable a try.</p>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <!-- SUPPORT & CONSULTING -->
+    <section class="consulting-section" id="consulting">
+      <div class="consulting-content" data-reveal>
+        <div class="consulting-text">
+          <h2 class="consulting-title">Work with me</h2>
+          <p class="consulting-desc">I help teams navigate AI transformation: upleveling developers, building AI-native workflows, and shipping products. Deep expertise in developer experience, design systems, and full-stack architecture.</p>
+        </div>
+        <div class="consulting-actions">
+          <a href="mailto:paul@paulbakaus.com" class="btn btn-primary">
+            <span>Get in touch</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </a>
+          <a href="https://buy.stripe.com/aFa3cwfsEe3G25R6i48Ra03" class="btn btn-secondary" target="_blank" rel="noopener">
+            <span>Leave a tip</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-content">
+      <div class="footer-brand">
+        <span class="footer-logo">Impeccable</span>
+      </div>
+      <div class="footer-links">
+        <a href="/cheatsheet">Cheatsheet</a>
+        <a href="/privacy">Privacy</a>
+        <a href="https://github.com/pbakaus/impeccable">GitHub</a>
+      </div>
+    </div>
+    <div class="footer-author">
+      <span class="footer-author-label">Created by <a href="https://x.com/pbakaus" target="_blank" rel="noopener">Paul Bakaus</a></span>
+      <div class="footer-author-links">
+        <a href="https://x.com/pbakaus" class="footer-social-link" aria-label="Follow on X" target="_blank" rel="noopener">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          </svg>
+        </a>
+        <a href="https://linkedin.com/in/paulbakaus" class="footer-social-link" aria-label="Connect on LinkedIn" target="_blank" rel="noopener">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+          </svg>
+        </a>
+        <span class="footer-author-divider"></span>
+        <a href="https://www.paulbakaus.com" class="footer-newsletter" target="_blank" rel="noopener">
+          Blog
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </a>
+        <span class="footer-author-divider"></span>
+        <a href="https://impeccablestyle.substack.com" class="footer-newsletter" target="_blank" rel="noopener">
+          Newsletter
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

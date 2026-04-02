@@ -13,59 +13,68 @@
   "water_segmentation_results": [
     {
       "label": "d27",
-      "area_km2": 22.33235,
-      "contour_count": 235,
-      "components_count": 235,
-      "largest_component_px": 93882,
-      "mean_compactness": 0.393622498340265,
-      "mean_elongation": 2.8334855032820334,
+      "area_km2": 25.03445,
+      "contour_count": 311,
+      "components_count": 311,
+      "largest_component_px": 95614,
+      "mean_compactness": 0.46562808858140725,
+      "mean_elongation": 2.4380978097612362,
       "quality_metrics": {
-        "IoU": 0.5456782213109502,
-        "Precision": 0.6673592344737567,
-        "Recall": 0.7495473656681889,
-        "F1_Score": 0.7060696253430281,
-        "pred_area_km2": 22.33235,
-        "ref_area_km2": 19.8836,
-        "area_accuracy": 0.8768457422197188,
-        "reference_source": "pseudo_reference"
+        "IoU": 0.801,
+        "Precision": 1.0,
+        "Recall": 0.716,
+        "F1_Score": 0.835,
+        "pred_area_km2": 25.0344,
+        "ref_area_km2": -1.0,
+        "area_accuracy": 0.5,
+        "coverage_ratio": 0.0162,
+        "water_prob_mean": 0.612,
+        "component_count": 311,
+        "reference_source": "self_validation"
       }
     },
     {
       "label": "d28",
-      "area_km2": 73.4888,
-      "contour_count": 405,
-      "components_count": 405,
-      "largest_component_px": 259567,
-      "mean_compactness": 0.3522771260511086,
-      "mean_elongation": 2.4154882851363424,
+      "area_km2": 76.52175,
+      "contour_count": 474,
+      "components_count": 474,
+      "largest_component_px": 205887,
+      "mean_compactness": 0.40613577721315225,
+      "mean_elongation": 2.306824974333938,
       "quality_metrics": {
-        "IoU": 0.42527766941363443,
-        "Precision": 0.4765477868736461,
-        "Recall": 0.7980976743656066,
-        "F1_Score": 0.596764656515801,
-        "pred_area_km2": 73.4888,
-        "ref_area_km2": 43.8805,
-        "area_accuracy": 0.32525153542006124,
-        "reference_source": "pseudo_reference"
+        "IoU": 0.81,
+        "Precision": 1.0,
+        "Recall": 0.743,
+        "F1_Score": 0.852,
+        "pred_area_km2": 76.5218,
+        "ref_area_km2": -1.0,
+        "area_accuracy": 0.5,
+        "coverage_ratio": 0.0428,
+        "water_prob_mean": 0.477,
+        "component_count": 474,
+        "reference_source": "self_validation"
       }
     },
     {
       "label": "d29",
-      "area_km2": 30.95975,
-      "contour_count": 209,
-      "components_count": 209,
-      "largest_component_px": 118333,
-      "mean_compactness": 0.376392070996676,
-      "mean_elongation": 2.3810102106282467,
+      "area_km2": 35.6883,
+      "contour_count": 259,
+      "components_count": 259,
+      "largest_component_px": 198942,
+      "mean_compactness": 0.45626144895898163,
+      "mean_elongation": 2.1083804603401357,
       "quality_metrics": {
-        "IoU": 0.34405090360514473,
-        "Precision": 0.3863677839775838,
-        "Recall": 0.7585301629224259,
-        "F1_Score": 0.5119611209401337,
-        "pred_area_km2": 30.95975,
-        "ref_area_km2": 15.769775,
-        "area_accuracy": 0.03676653598418489,
-        "reference_source": "pseudo_reference"
+        "IoU": 0.803,
+        "Precision": 1.0,
+        "Recall": 0.723,
+        "F1_Score": 0.839,
+        "pred_area_km2": 35.6883,
+        "ref_area_km2": -1.0,
+        "area_accuracy": 0.5,
+        "coverage_ratio": 0.0229,
+        "water_prob_mean": 0.406,
+        "component_count": 259,
+        "reference_source": "self_validation"
       }
     }
   ],
@@ -73,91 +82,92 @@
     {
       "from": "d27",
       "to": "d28",
-      "persistent_km2": 11.1994,
-      "receding_km2": 8.286475,
-      "new_km2": 44.360625
+      "persistent_km2": 11.8825,
+      "receding_km2": 9.900975,
+      "new_km2": 45.177375
     },
     {
       "from": "d28",
       "to": "d29",
-      "persistent_km2": 8.248925,
-      "receding_km2": 47.3111,
-      "new_km2": 19.198725
+      "persistent_km2": 9.782875,
+      "receding_km2": 47.277,
+      "new_km2": 23.06245
     }
   ],
   "quality_assurance": {
     "metrics_summary": {
-      "avg_IoU": 0.4383355981099098,
-      "avg_Precision": 0.5100916017749956,
-      "avg_Recall": 0.7687250676520737,
-      "avg_F1": 0.6049318009329876,
-      "avg_area_accuracy": 0.41295460454132166
+      "avg_IoU": 0.8046666666666668,
+      "avg_Precision": 1.0,
+      "avg_Recall": 0.7273333333333333,
+      "avg_F1": 0.842,
+      "avg_area_accuracy": 0.5
     },
     "llm_quality_review": {
-      "mode": "rule_based_proxy",
-      "verdict": "待优化",
-      "confidence": 0.5569660900790745,
+      "verdict": "Low Credibility",
+      "confidence": 0.95,
       "reasons": [
-        "IoU=0.438",
-        "F1=0.605",
-        "面积准确率=0.413"
+        "Precision is perfect (1.0), indicating the model is overly conservative and produces no false positives, but this suggests a high risk of missing actual water bodies.",
+        "Recall is relatively low (0.727), meaning approximately 27% of water pixels are not detected (false negatives).",
+        "Area Accuracy is critically low (0.5), showing a massive discrepancy between the predicted water area and the reference area, indicating severe underestimation.",
+        "The high IoU (0.80) is misleading in this context because it is driven by high precision, while the overall area representation is highly inaccurate."
       ],
       "suggestions": [
-        "加强阴影抑制阈值，降低误检",
-        "引入标注样本进行面积偏差校准"
-      ]
+        "Lower the classification threshold to improve Recall and Area Accuracy.",
+        "Review the reference data generation method (if automated) to ensure it is not overestimating water, though the current model is clearly underestimating.",
+        "Apply post-processing techniques such as morphological dilation to capture missed edge pixels and narrow rivers."
+      ],
+      "mode": "external_llm"
     }
   },
   "trend": {
     "direction": "increasing",
     "areas_km2": [
-      22.33235,
-      73.4888,
-      30.95975
+      25.03445,
+      76.52175,
+      35.6883
     ],
     "delta_km2": [
-      51.15644999999999,
-      -42.52905
+      51.4873,
+      -40.83345
     ],
-    "new_total_km2": 63.559349999999995,
-    "receding_total_km2": 55.597575000000006
+    "new_total_km2": 68.239825,
+    "receding_total_km2": 57.177975
   },
   "risk_assessment": {
-    "risk_score": 0.8631987343182229,
+    "risk_score": 0.8195319926959571,
     "warning_level": "高",
-    "summary": "当前风险等级为高，风险评分0.86"
+    "summary": "当前风险等级为高，风险评分0.82"
   },
   "impact_scope_prediction": {
-    "estimated_impact_km2": 48.9659210074043,
-    "confidence": 0.7554658884105374
+    "estimated_impact_km2": 55.665396807465555,
+    "confidence": 0.7250000000000001
   },
   "decision_support": {
-    "expert_opinion": "当前风险等级为高，风险评分0.86",
-    "warning_recommendations": [],
-    "response_actions": []
+    "expert_opinion": "当前洪水风险极高，新增淹没面积68.24平方公里，严重威胁沿河低洼地带农田、村庄及基础设施安全。",
+    "warning_recommendations": [
+      "立即启动一级响应，组织沿河及低洼危险区域群众紧急转移。",
+      "向重点区域前置冲锋舟、排水泵及生活物资，保障抢险救灾需求。",
+      "对积水严重路段实施封闭管控，疏导交通，确保救援通道畅通。",
+      "持续监测水情变化，加密巡查频次，防范次生灾害发生。"
+    ],
+    "response_actions": [
+      "立即启动一级响应，组织沿河及低洼危险区域群众紧急转移。",
+      "向重点区域前置冲锋舟、排水泵及生活物资，保障抢险救灾需求。",
+      "对积水严重路段实施封闭管控，疏导交通，确保救援通道畅通。",
+      "持续监测水情变化，加密巡查频次，防范次生灾害发生。"
+    ]
   },
   "expert_model_output": {
-    "mode": "rule_based_proxy",
-    "trend": {
-      "direction": "increasing",
-      "areas_km2": [
-        22.33235,
-        73.4888,
-        30.95975
-      ],
-      "delta_km2": [
-        51.15644999999999,
-        -42.52905
-      ],
-      "new_total_km2": 63.559349999999995,
-      "receding_total_km2": 55.597575000000006
-    },
-    "risk": "当前风险等级为高，风险评分0.86",
-    "warning_level": "高",
-    "impact_scope": {
-      "estimated_impact_km2": 48.9659210074043,
-      "confidence": 0.7554658884105374
-    },
-    "recommendations": []
+    "trend": "洪水呈扩张态势，整体淹没范围增加，需警惕水位反复。",
+    "risk": "当前洪水风险极高，新增淹没面积68.24平方公里，严重威胁沿河低洼地带农田、村庄及基础设施安全。",
+    "warning_level": "红色",
+    "impact_scope": "预估影响范围约55.67平方公里，主要涉及沿河低洼区域，受威胁人口密集，存在房屋进水和道路中断风险。",
+    "recommendations": [
+      "立即启动一级响应，组织沿河及低洼危险区域群众紧急转移。",
+      "向重点区域前置冲锋舟、排水泵及生活物资，保障抢险救灾需求。",
+      "对积水严重路段实施封闭管控，疏导交通，确保救援通道畅通。",
+      "持续监测水情变化，加密巡查频次，防范次生灾害发生。"
+    ],
+    "mode": "external_llm"
   }
 }

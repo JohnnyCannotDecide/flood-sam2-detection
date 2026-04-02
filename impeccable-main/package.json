@@ -1,0 +1,36 @@
+{
+  "name": "impeccable",
+  "version": "1.6.0",
+  "author": "Paul Bakaus",
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "motion": "^12.23.26",
+    "playwright": "^1.57.0"
+  },
+  "description": "Cross-provider design skills and commands for LLM-powered development tools",
+  "keywords": [
+    "cursor",
+    "claude",
+    "gemini",
+    "codex",
+    "design",
+    "frontend",
+    "ux"
+  ],
+  "license": "SEE LICENSE FILE",
+  "scripts": {
+    "build": "bun run scripts/build.js",
+    "clean": "rm -rf dist build",
+    "rebuild": "bun run clean && bun run build",
+    "dev": "bun run server/index.js",
+    "preview": "bun run build && wrangler pages dev",
+    "deploy": "bun run build && wrangler pages deploy build/",
+    "test": "bun test",
+    "screenshot": "bun run scripts/screenshot-antipatterns.js",
+    "og-image": "bun run scripts/generate-og-image.js"
+  },
+  "type": "module",
+  "devDependencies": {
+    "wrangler": "^4.71.0"
+  }
+}

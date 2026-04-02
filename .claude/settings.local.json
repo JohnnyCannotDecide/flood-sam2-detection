@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p .understand-anything/intermediate)",
+      "Bash(mkdir -p .understand-anything/tmp)",
+      "Bash(python convert_md_to_docx.py)"
+    ]
+  }
+}

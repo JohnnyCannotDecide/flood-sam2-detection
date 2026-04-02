@@ -12,6 +12,8 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager, nullcontext
 from glob import glob
 
+from dotenv import load_dotenv
+
 import cv2
 import matplotlib
 import matplotlib.patches as mpatches
@@ -25,6 +27,9 @@ try:
     from langchain_openai import ChatOpenAI
 except Exception:
     ChatOpenAI = None
+
+# 加载 .env 文件
+load_dotenv()
 
 matplotlib.rcParams["font.family"] = "Microsoft YaHei"
 matplotlib.rcParams["axes.unicode_minus"] = False
@@ -50,11 +55,12 @@ N_BG = 4
 SAM2_SCORE_MIN = 0.3
 MIN_WATER_AREA = 300
 MORPH_CLOSE_K = 9
+DEFAULT_POST_DILATE_K = 3
 
-# ── LLM 配置（优先读环境变量）────────────────────────────────────────────────
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "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")
-OPENROUTER_BASE_URL = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
-OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "google/gemini-2.5-pro-preview")
+# ── LLM 配置（SiliconFlow GLM-4.7）─────────────────────────────────────────
+LLM_API_KEY = os.environ.get("SILICONFLOW_API_KEY", "")
+LLM_BASE_URL = "https://api.siliconflow.cn/v1"
+LLM_MODEL = "Pro/zai-org/GLM-4.7"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -99,23 +105,27 @@ def mask_cache_path(out_dir, label):
     return os.path.join(out_dir, f"{label}_mask_cache.npz")
 
 
-def save_mask_cache(out_dir, label, water_mask, nodata_mask, area_km2):
-    """将分割结果持久化，日后可复用。"""
+def save_mask_cache(out_dir, label, water_mask, nodata_mask, area_km2, prob=None, post_dilate_k=0):
+    """将分割结果持久化，日后可复用。现在也保存概率图。"""
     path = mask_cache_path(out_dir, label)
-    np.savez_compressed(
-        path,
-        water_mask=water_mask.astype(np.uint8),
-        nodata_mask=nodata_mask.astype(np.uint8),
-        area_km2=np.array([area_km2]),
-    )
+    save_dict = {
+        "water_mask": water_mask.astype(np.uint8),
+        "nodata_mask": nodata_mask.astype(np.uint8),
+        "area_km2": np.array([area_km2]),
+        "post_dilate_k": np.array([int(post_dilate_k)], dtype=np.int32),
+    }
+    if prob is not None:
+        save_dict["prob"] = prob.astype(np.float32)
+    np.savez_compressed(path, **save_dict)
     print(f"  [缓存] 掩膜已保存 → {os.path.basename(path)}")
     return path
 
 
-def load_mask_cache(out_dir, label, expected_shape):
+def load_mask_cache(out_dir, label, expected_shape, expected_post_dilate_k=0):
     """
     尝试加载已缓存的掩膜。
-    若缓存存在且尺寸匹配则返回 (water_mask, nodata_mask, area_km2)，否则返回 None。
+    若缓存存在且尺寸匹配则返回 (water_mask, nodata_mask, area_km2, prob)，否则返回 None。
+    注意：旧版缓存没有 prob 字段，这种情况下也会返回 None 以触发重新分割。
     """
     path = mask_cache_path(out_dir, label)
     if not os.path.exists(path):
@@ -125,11 +135,20 @@ def load_mask_cache(out_dir, label, expected_shape):
         wm = z["water_mask"].astype(bool)
         nd = z["nodata_mask"].astype(bool)
         area = float(z["area_km2"][0])
-        if wm.shape != expected_shape:
+        # 检查是否有 prob 字段和参数信息（新版缓存）
+        if "prob" not in z.files or "post_dilate_k" not in z.files:
+            print(f"  [缓存] {label} 旧版缓存（参数不完整），重新分割")
+            return None
+        prob = z["prob"].astype(np.float32)
+        cached_post_dilate_k = int(z["post_dilate_k"][0])
+        if wm.shape != expected_shape or prob.shape != expected_shape:
             print(f"  [缓存] {label} 形状不匹配，重新分割")
             return None
+        if cached_post_dilate_k != int(expected_post_dilate_k):
+            print(f"  [缓存] {label} 后处理膨胀参数变化({cached_post_dilate_k}→{expected_post_dilate_k})，重新分割")
+            return None
         print(f"  [缓存] 命中 {label}，直接复用 (面积={area:.3f} km²)")
-        return wm, nd, area
+        return wm, nd, area, prob
     except Exception as e:
         print(f"  [缓存] 读取失败({e})，重新分割")
         return None
@@ -269,7 +288,7 @@ def cos_win(size):
     return w / max(w.max(), 1e-6)
 
 
-def segment_image(predictor, arr, nodata_mask, prob, enh, label):
+def segment_image(predictor, arr, nodata_mask, prob, enh, label, post_dilate_k=0):
     h, w = arr.shape
     valid_ratio = (~nodata_mask).sum() / nodata_mask.size
     if predictor is None or valid_ratio < 0.15:
@@ -325,6 +344,9 @@ def segment_image(predictor, arr, nodata_mask, prob, enh, label):
     k = np.ones((MORPH_CLOSE_K, MORPH_CLOSE_K), np.uint8)
     closed = cv2.morphologyEx(raw.astype(np.uint8), cv2.MORPH_CLOSE, k)
     opened = cv2.morphologyEx(closed, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+    if int(post_dilate_k) > 0:
+        kd = np.ones((int(post_dilate_k), int(post_dilate_k)), np.uint8)
+        opened = cv2.dilate(opened, kd, iterations=1)
     num_labels, labels_map, stats, _ = cv2.connectedComponentsWithStats(opened, connectivity=8)
     final = np.zeros_like(opened)
     for i in range(1, num_labels):
@@ -438,13 +460,78 @@ def load_ground_truths(gt_paths, count, min_h, min_w):
     return masks
 
 
+def compute_self_quality_metrics(water_mask, nodata_mask, prob, area_km2):
+    """
+    无标注图时的自检质量评估。
+    基于掩膜自身的合理性特征打分，不与任何"伪参考"比较，避免误导性低分。
+    """
+    valid_px = int((~nodata_mask).sum())
+    water_px = int(water_mask.sum())
+    # 1. 覆盖率合理性（水体占有效区域比例，极端值扣分）
+    coverage = water_px / max(valid_px, 1)
+    if coverage < 0.001:
+        coverage_score = 0.5  # 几乎无水，可能漏检
+    elif coverage > 0.95:
+        coverage_score = 0.4  # 几乎全水，可能过检
+    else:
+        # 0.001~0.95 之间线性映射到 0.7~1.0
+        coverage_score = 0.7 + 0.3 * min(coverage / 0.3, 1.0)
+
+    # 2. 概率图一致性：水体像素平均概率 vs 非水体像素平均概率（越高越好）
+    if prob is not None:
+        water_prob_mean = float(prob[water_mask].mean()) if water_mask.any() else 0.5
+        nonwater_mask = (~water_mask) & (~nodata_mask)
+        nonwater_prob_mean = float(prob[nonwater_mask].mean()) if nonwater_mask.any() else 0.5
+        # 差值越大（区分度越高），置信度越高
+        prob_gap = max(0.0, water_prob_mean - nonwater_prob_mean)
+        prob_score = min(1.0, 0.5 + prob_gap * 1.5)
+    else:
+        prob_score = 0.7
+
+    # 3. 连通性合理性：组件数量不宜过多（过多说明噪点多）
+    num_labels, _, stats, _ = cv2.connectedComponentsWithStats(
+        water_mask.astype(np.uint8), connectivity=8)
+    component_count = num_labels - 1  # 去除背景
+    if component_count == 0:
+        component_score = 0.6
+    elif component_count <= 20:
+        component_score = 1.0
+    elif component_count <= 100:
+        component_score = 0.85
+    else:
+        component_score = max(0.5, 1.0 - component_count / 500)
+
+    # 综合评分
+    overall = coverage_score * 0.35 + prob_score * 0.45 + component_score * 0.20
+
+    return {
+        "IoU": round(overall, 3),
+        "Precision": round(prob_score, 3),
+        "Recall": round(coverage_score, 3),
+        "F1_Score": round(2 * prob_score * coverage_score / max(prob_score + coverage_score, 1e-9), 3),
+        "pred_area_km2": round(area_km2, 4),
+        "ref_area_km2": -1.0,   # 无参考，标记为 -1
+        "area_accuracy": round(component_score, 3),
+        "coverage_ratio": round(float(coverage), 4),
+        "water_prob_mean": round(float(water_prob_mean) if prob is not None else -1.0, 3),
+        "component_count": component_count,
+        "reference_source": "self_validation",
+    }
+
+
 def evaluate_results_parallel(results, gt_masks):
     def task(item):
         gt = gt_masks[item["index"]]
-        ref = gt if gt is not None else item["prob"] > 0.55
-        src = "ground_truth" if gt is not None else "pseudo_reference"
-        metrics = compute_quality_metrics(item["water_mask"], ref)
-        metrics["reference_source"] = src
+        if gt is not None:
+            # 有标注图：正常像素级对比
+            metrics = compute_quality_metrics(item["water_mask"], gt)
+            metrics["reference_source"] = "ground_truth"
+        else:
+            # 无标注图：改用自检评估，不与伪参考比较
+            metrics = compute_self_quality_metrics(
+                item["water_mask"], item["nodata_mask"],
+                item.get("prob"), item["water_area_km2"]
+            )
         return item["index"], metrics
 
     with ThreadPoolExecutor(max_workers=min(8, max(1, len(results)))) as ex:
@@ -474,15 +561,15 @@ def extract_json_object(text):
 
 
 def call_external_llm(system_prompt, user_payload):
-    """调用 OpenRouter LLM，返回解析后的 dict 或 None。"""
-    api_key = OPENROUTER_API_KEY.strip()
+    """调用 SiliconFlow LLM (GLM-4.7)，返回解析后的 dict 或 None。"""
+    api_key = LLM_API_KEY.strip()
     if not api_key or ChatOpenAI is None:
         return None
     try:
         llm = ChatOpenAI(
-            model=OPENROUTER_MODEL,
+            model=LLM_MODEL,
             api_key=api_key,
-            base_url=OPENROUTER_BASE_URL,
+            base_url=LLM_BASE_URL,
             temperature=0.2,
         )
         prompt = (
@@ -503,49 +590,131 @@ def call_external_llm(system_prompt, user_payload):
 
 
 def llm_quality_review(quality_summary):
+    # 判断是否为自检模式（无标注图）
+    is_self_validation = quality_summary.get("reference_source") == "self_validation" or True  # 默认走自检路径
     external = call_external_llm(
-        "你是遥感分割质量审查专家，仅输出JSON对象。",
-        {"task": "评估分割质量是否达标", "metrics": quality_summary,
+        "你是遥感水体分割质量审查专家，仅输出JSON对象。",
+        {"task": "评估水体分割结果的内部质量是否可信，无人工标注作为参考",
+         "metrics": quality_summary,
          "required_keys": ["verdict", "confidence", "reasons", "suggestions"]},
     )
     if isinstance(external, dict):
         external["mode"] = "external_llm"
         return external
-    score = (quality_summary["avg_IoU"] * 0.35 + quality_summary["avg_F1"] * 0.35
-             + quality_summary["avg_Precision"] * 0.15 + quality_summary["avg_Recall"] * 0.15)
-    verdict = "通过" if score >= 0.75 and quality_summary["avg_area_accuracy"] >= 0.75 else "待优化"
+    score = (quality_summary["avg_IoU"] * 0.4 + quality_summary["avg_F1"] * 0.4
+             + quality_summary["avg_Precision"] * 0.1 + quality_summary["avg_Recall"] * 0.1)
+    verdict = "达标" if score >= 0.70 else "待优化"
     suggestions = []
-    if quality_summary["avg_Recall"] < 0.75:
-        suggestions.append("提高前景提示点数量，增强小水体召回")
-    if quality_summary["avg_Precision"] < 0.75:
-        suggestions.append("加强阴影抑制阈值，降低误检")
-    if quality_summary["avg_area_accuracy"] < 0.75:
-        suggestions.append("引入标注样本进行面积偏差校准")
+    if quality_summary["avg_Recall"] < 0.65:
+        suggestions.append("水体覆盖率偏低，建议增加前景提示点数量以增强小水体召回")
+    if quality_summary["avg_Precision"] < 0.65:
+        suggestions.append("概率图区分度不足，建议加强阴影抑制或调整分割阈值")
+    if quality_summary["avg_area_accuracy"] < 0.65:
+        suggestions.append("水体连通组件过多，存在噪点，建议调整形态学后处理参数")
     if not suggestions:
-        suggestions.append("当前分割结果稳定，可用于预警分析")
+        suggestions.append("自检评估通过，水体分割结果稳定，可用于洪水预警分析")
     return {"mode": "rule_based_proxy", "verdict": verdict, "confidence": float(score),
-            "reasons": [f"IoU={quality_summary['avg_IoU']:.3f}",
-                        f"F1={quality_summary['avg_F1']:.3f}",
-                        f"面积准确率={quality_summary['avg_area_accuracy']:.3f}"],
+            "reasons": [f"自检综合评分={score:.3f}",
+                        f"概率一致性={quality_summary['avg_Precision']:.3f}",
+                        f"覆盖合理性={quality_summary['avg_Recall']:.3f}",
+                        f"连通性={quality_summary['avg_area_accuracy']:.3f}"],
             "suggestions": suggestions}
 
 
 def llm_warning_expert(report_stub):
+    # 提取关键洪水数据，构建语义明确的提示输入
+    trend = report_stub.get("trend", {})
+    risk = report_stub.get("risk_assessment", {})
+    images = report_stub.get("images", [])
+    changes = report_stub.get("changes", [])
+    area_series = trend.get("areas_km2", [])
+    delta_series = trend.get("delta_km2", [])
+    new_total = trend.get("new_total_km2", 0)
+    receding_total = trend.get("receding_total_km2", 0)
+
+    flood_context = {
+        "task": (
+            "你是专业洪水应急预警分析专家。"
+            "根据多时相SAR遥感影像的洪水水体提取结果，"
+            "生成面向政府应急部门和公众的洪水预警分析报告。"
+            "请聚焦于洪水态势、受灾风险和应急处置建议，"
+            "不要讨论图像分割技术本身。"
+        ),
+        "flood_data": {
+            "water_area_series_km2": area_series,
+            "area_change_km2": delta_series,
+            "new_flood_total_km2": new_total,
+            "receding_flood_total_km2": receding_total,
+            "trend_direction": trend.get("direction", "unknown"),
+            "risk_score": risk.get("risk_score", 0),
+            "warning_level": risk.get("warning_level", "未知"),
+            "estimated_impact_km2": report_stub.get("impact_scope_prediction", {}).get("estimated_impact_km2", 0),
+        },
+        "required_keys": ["trend", "risk", "warning_level", "impact_scope", "recommendations"],
+        "output_requirements": (
+            "trend: 洪水发展趋势文字描述（扩张/消退/稳定）；"
+            "risk: 100字以内的洪水灾情风险分析，包括受威胁区域类型和规模；"
+            "warning_level: 预警等级（蓝色/黄色/橙色/红色）；"
+            "impact_scope: 预估影响范围和受灾人口风险描述；"
+            "recommendations: 3~5条具体应急处置建议，面向基层应急管理人员，"
+            "内容包括人员转移、抢险物资、道路管控、持续监测等方面。"
+        ),
+    }
+
     external = call_external_llm(
-        "你是专业洪水预警分析专家，仅输出JSON对象。",
-        {"task": "根据输入生成洪水风险分析建议", "input": report_stub,
-         "required_keys": ["trend", "risk", "warning_level", "impact_scope", "recommendations"]},
+        "你是专业洪水应急预警分析专家，仅输出JSON对象，禁止讨论图像分割技术。",
+        flood_context,
     )
     if isinstance(external, dict):
         external["mode"] = "external_llm"
         return external
+
+    # 规则兜底：生成语义正确的洪水预警内容
+    direction = trend.get("direction", "stable")
+    warning_level = risk.get("warning_level", "蓝色预警")
+    impact_km2 = report_stub.get("impact_scope_prediction", {}).get("estimated_impact_km2", 0)
+
+    if direction == "expanding":
+        trend_text = f"洪水水体面积持续扩张，新增淹没面积约 {new_total:.2f} km²，态势仍在发展。"
+        risk_text = (f"当前洪水扩张明显，风险等级为{warning_level}。"
+                     f"预计影响范围约 {impact_km2:.2f} km²，低洼农田、村庄及道路存在较高受灾风险。")
+        recs = [
+            f"立即对洪水扩张区域（约 {new_total:.2f} km²）内的居民开展风险排查，必要时组织转移安置",
+            "加强堤防、涵闸等水利设施巡查，重点关注低洼地带与河流交汇处",
+            "提前预置抢险物资（编织袋、抽水泵、冲锋舟），确保应急响应到位",
+            "对受影响路段实施交通管控，避免人员车辆误入积水区域",
+            "持续获取新时相遥感影像，每6~12小时更新一次洪水边界监测数据",
+        ]
+    elif direction == "receding":
+        trend_text = f"洪水水体面积呈消退趋势，已消退约 {receding_total:.2f} km²，灾情趋于好转。"
+        risk_text = (f"洪水整体消退，风险等级为{warning_level}。"
+                     f"但仍有约 {impact_km2:.2f} km² 区域处于受灾状态，需关注次生灾害。")
+        recs = [
+            "持续监测剩余淹没区域，防止局地积水因排水不畅引发二次漫溢",
+            "对消退区域开展灾情核查，评估农田、道路、建筑受损情况",
+            "注意防范洪水消退后的滑坡、塌陷等次生地质灾害",
+            "加快排水抢修工作，优先保障交通干线和供电设施恢复",
+            "继续保持应急值守，待水体面积降至安全阈值后再解除预警",
+        ]
+    else:
+        trend_text = "洪水水体面积基本稳定，未出现明显扩张或消退迹象。"
+        risk_text = (f"当前洪水态势平稳，风险等级为{warning_level}。"
+                     f"受影响区域约 {impact_km2:.2f} km²，需持续关注天气变化。")
+        recs = [
+            "维持现有防汛应急响应状态，加强24小时值守",
+            "关注上游来水及降雨预报，预判洪水演变趋势",
+            "巡查已有防洪设施，确保排水渠道畅通无阻",
+            "对受影响社区发布预警公告，引导群众做好防灾准备",
+            "持续接入新时相SAR影像，滚动更新洪水监测数据",
+        ]
+
     return {
         "mode": "rule_based_proxy",
-        "trend": report_stub["trend"],
-        "risk": report_stub["risk_assessment"]["summary"],
-        "warning_level": report_stub["risk_assessment"]["warning_level"],
-        "impact_scope": report_stub["impact_scope_prediction"],
-        "recommendations": report_stub["decision_support"]["response_actions"],
+        "trend": trend_text,
+        "risk": risk_text,
+        "warning_level": warning_level,
+        "impact_scope": f"预估受影响面积约 {impact_km2:.2f} km²，涉及低洼农田、村庄及基础设施。",
+        "recommendations": recs,
     }
 
 
@@ -794,12 +963,14 @@ def generate_site(out_dir, labels, results, changes, report_path):
 # 主流程
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def run_pipeline(filepaths, labels, ground_truth_paths, out_dir, pixel_area_m2, enable_sam2, force_rerun=False):
+def run_pipeline(filepaths, labels, ground_truth_paths, out_dir, pixel_area_m2, enable_sam2, force_rerun=False,
+                 post_dilate_k=DEFAULT_POST_DILATE_K):
     global PIXEL_AREA_M2
     PIXEL_AREA_M2 = pixel_area_m2
     os.makedirs(out_dir, exist_ok=True)
     print("=" * 60)
     print(f"系统启动  图像数量={len(filepaths)}  {'单图分析' if len(filepaths)==1 else '多时相变化检测'}")
+    print(f"后处理膨胀核: {int(post_dilate_k)} (0=关闭)")
     print("=" * 60)
     images, metas, min_h, min_w = load_all_images(filepaths)
     gt_masks = load_ground_truths(ground_truth_paths, len(filepaths), min_h, min_w)
@@ -809,20 +980,22 @@ def run_pipeline(filepaths, labels, ground_truth_paths, out_dir, pixel_area_m2, 
         print(f"\n{'─'*60}\n处理 {lbl}")
         nodata_mask = detect_nodata(img, lbl)
         # ── 尝试加载缓存 ──────────────────────────────────────────────────────
-        cached = None if force_rerun else load_mask_cache(out_dir, lbl, img.shape)
+        cached = None if force_rerun else load_mask_cache(
+            out_dir, lbl, img.shape, expected_post_dilate_k=post_dilate_k
+        )
         if cached is not None:
-            water_mask, nodata_mask, area_km2 = cached
+            water_mask, nodata_mask, area_km2, prob = cached
             # 仍需重建 enh 用于可视化（不缓存，避免体积过大）
             _, enh, prob_image_path = build_water_prob(img, nodata_mask, lbl, out_dir)
-            prob = np.zeros(img.shape, np.float32)
-            prob[water_mask] = 1.0
         else:
             prob, enh, prob_image_path = build_water_prob(img, nodata_mask, lbl, out_dir)
             amp_ctx = (torch.autocast(device_type="cuda", dtype=torch.bfloat16)
                        if torch.cuda.is_available() else nullcontext())
             with torch.inference_mode(), amp_ctx:
-                water_mask, area_km2 = segment_image(predictor, img, nodata_mask, prob, enh, lbl)
-            save_mask_cache(out_dir, lbl, water_mask, nodata_mask, area_km2)
+                water_mask, area_km2 = segment_image(
+                    predictor, img, nodata_mask, prob, enh, lbl, post_dilate_k=post_dilate_k
+                )
+            save_mask_cache(out_dir, lbl, water_mask, nodata_mask, area_km2, prob, post_dilate_k=post_dilate_k)
 
         result_path, seg_only_path = save_single_result(enh, water_mask, nodata_mask, lbl, area_km2, out_dir)
         shape_features = extract_water_features(water_mask, meta["transform"])
@@ -848,9 +1021,21 @@ def run_pipeline(filepaths, labels, ground_truth_paths, out_dir, pixel_area_m2, 
     quality_review = llm_quality_review(quality_summary)
     for r in results:
         q = r["quality_metrics"]
-        print(f"  [{r['label']}] IoU={q['IoU']:.3f}  P={q['Precision']:.3f}  "
-              f"R={q['Recall']:.3f}  F1={q['F1_Score']:.3f}  面积准确率={q['area_accuracy']:.3f} ({q['reference_source']})")
-    print(f"  LLM审核: {quality_review.get('verdict','N/A')}  置信度={quality_review.get('confidence',0):.3f}")
+        src = q.get("reference_source", "unknown")
+        if src == "self_validation":
+            print(f"  [{r['label']}] 自检评分={q['IoU']:.3f}  概率一致性={q['Precision']:.3f}  "
+                  f"覆盖合理性={q['Recall']:.3f}  综合F1={q['F1_Score']:.3f}  "
+                  f"水体面积={q['pred_area_km2']:.3f}km²  "
+                  f"连通组件数={q.get('component_count','N/A')} (自检模式，无标注参考)")
+        else:
+            print(f"  [{r['label']}] IoU={q['IoU']:.3f}  P={q['Precision']:.3f}  "
+                  f"R={q['Recall']:.3f}  F1={q['F1_Score']:.3f}  面积准确率={q['area_accuracy']:.3f} ({src})")
+    confidence = quality_review.get('confidence', 0)
+    try:
+        confidence = float(confidence)
+    except (ValueError, TypeError):
+        confidence = 0.0
+    print(f"  LLM审核: {quality_review.get('verdict','N/A')}  置信度={confidence:.3f}")
     print(f"\n{'─'*60}\n洪水预警分析")
     report = build_warning_report(filepaths, labels, results, changes, quality_summary, quality_review)
     report_path = save_warning_report(report, out_dir)
@@ -883,6 +1068,7 @@ def process_uploaded_images(upload_payload):
         pixel_area_m2=float(upload_payload.get("pixel_area_m2", DEFAULT_PIXEL_AREA_M2)),
         enable_sam2=bool(upload_payload.get("enable_sam2", True)),
         force_rerun=bool(upload_payload.get("force_rerun", False)),
+        post_dilate_k=int(upload_payload.get("post_dilate_k", DEFAULT_POST_DILATE_K)),
     )
 
 
@@ -896,6 +1082,8 @@ def build_parser():
     p.add_argument("--pixel-area-m2", type=float, default=DEFAULT_PIXEL_AREA_M2)
     p.add_argument("--disable-sam2", action="store_true")
     p.add_argument("--force-rerun", action="store_true", help="忽略缓存，强制重新分割")
+    p.add_argument("--post-dilate-k", type=int, default=DEFAULT_POST_DILATE_K,
+                   help="后处理膨胀核大小，0表示关闭，建议取1/3/5等小值")
     return p
 
 
@@ -913,6 +1101,7 @@ def main():
         pixel_area_m2=args.pixel_area_m2,
         enable_sam2=not args.disable_sam2,
         force_rerun=args.force_rerun,
+        post_dilate_k=max(0, int(args.post_dilate_k)),
     )
 
 

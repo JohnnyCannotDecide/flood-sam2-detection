@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-TEXGHC7V34"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-TEXGHC7V34');
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Impeccable Command Cheatsheet</title>
+  <meta name="description" content="Quick reference for all 20 Impeccable commands. Print-friendly cheatsheet for design fluency in AI harnesses.">
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --font-body: 'Instrument Sans', system-ui, sans-serif;
+      --font-mono: 'Space Grotesk', monospace;
+      --color-ink: #1a1a1a;
+      --color-paper: #fafafa;
+      --color-mist: #e5e5e5;
+      --color-ash: #737373;
+      --color-accent: #d946ef;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --color-ink: #fafafa;
+        --color-paper: #1a1a1a;
+        --color-mist: #333;
+        --color-ash: #a3a3a3;
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      line-height: 1.5;
+      padding: 2rem;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--color-mist);
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .subtitle {
+      color: var(--color-ash);
+      font-size: 0.875rem;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--color-accent);
+      text-decoration: none;
+    }
+
+    .back-link:hover {
+      text-decoration: underline;
+    }
+
+    .category {
+      margin-bottom: 2rem;
+    }
+
+    .category-header {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--color-ash);
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--color-mist);
+    }
+
+    .commands-grid {
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .command {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 1rem;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--color-mist);
+    }
+
+    .command:last-child {
+      border-bottom: none;
+    }
+
+    .command-name {
+      font-family: var(--font-mono);
+      font-weight: 600;
+      font-size: 0.9375rem;
+      color: var(--color-ink);
+    }
+
+    .command-desc {
+      font-size: 0.875rem;
+      color: var(--color-ink);
+    }
+
+    .command-meta {
+      font-size: 0.75rem;
+      color: var(--color-ash);
+      margin-top: 0.25rem;
+    }
+
+    .command-meta code {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      background: var(--color-mist);
+      padding: 1px 4px;
+      border-radius: 2px;
+    }
+
+    footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--color-mist);
+      font-size: 0.75rem;
+      color: var(--color-ash);
+      text-align: center;
+    }
+
+    footer a {
+      color: var(--color-accent);
+      text-decoration: none;
+    }
+
+    @media print {
+      body { padding: 1rem; max-width: none; }
+      .back-link { display: none; }
+      footer { display: none; }
+      .command { page-break-inside: avoid; }
+    }
+
+    @media (max-width: 600px) {
+      .command {
+        grid-template-columns: 1fr;
+        gap: 0.25rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Impeccable Commands</h1>
+    <p class="subtitle">Quick reference for all 20 design commands</p>
+    <a href="/" class="back-link">&larr; Back to impeccable.style</a>
+  </header>
+
+  <main id="commands-container">
+    <p style="color: var(--color-ash);">Loading commands...</p>
+  </main>
+
+  <footer>
+    <p><a href="https://impeccable.style">impeccable.style</a> &middot; Design fluency for AI harnesses</p>
+  </footer>
+
+  <script type="module">
+    const categoryLabels = {
+      'diagnostic': 'Diagnostic',
+      'quality': 'Quality',
+      'intensity': 'Intensity',
+      'adaptation': 'Adaptation',
+      'enhancement': 'Enhancement',
+      'system': 'System'
+    };
+
+    const categoryOrder = ['diagnostic', 'quality', 'intensity', 'adaptation', 'enhancement', 'system'];
+
+    const commandCategories = {
+      'teach-impeccable': 'system',
+      'audit': 'diagnostic',
+      'critique': 'diagnostic',
+      'normalize': 'quality',
+      'polish': 'quality',
+      'optimize': 'quality',
+      'harden': 'quality',
+      'clarify': 'adaptation',
+      'quieter': 'intensity',
+      'bolder': 'intensity',
+      'distill': 'adaptation',
+      'animate': 'enhancement',
+      'colorize': 'enhancement',
+      'delight': 'enhancement',
+      'extract': 'system',
+      'adapt': 'adaptation',
+      'onboard': 'enhancement',
+      'typeset': 'enhancement',
+      'arrange': 'enhancement',
+      'overdrive': 'enhancement'
+    };
+
+    const commandRelationships = {
+      'teach-impeccable': { flow: 'One-time project context gathering' },
+      'audit': { leadsTo: ['normalize', 'harden', 'optimize', 'adapt', 'clarify'], flow: 'Technical quality audit' },
+      'critique': { leadsTo: ['polish', 'distill', 'bolder', 'quieter', 'typeset', 'arrange'], flow: 'UX and design review' },
+      'normalize': { combinesWith: ['clarify', 'adapt'], flow: 'Align with design system' },
+      'polish': { flow: 'Final pass before shipping' },
+      'optimize': { flow: 'Performance improvements' },
+      'harden': { combinesWith: ['optimize'], flow: 'Error handling & edge cases' },
+      'clarify': { combinesWith: ['normalize', 'adapt'], flow: 'Improve UX copy' },
+      'quieter': { pairs: 'bolder', flow: 'Tone down bold designs' },
+      'bolder': { pairs: 'quieter', flow: 'Amplify timid designs' },
+      'distill': { combinesWith: ['quieter', 'normalize'], flow: 'Strip to essence' },
+      'animate': { combinesWith: ['delight'], flow: 'Add motion' },
+      'colorize': { combinesWith: ['bolder', 'delight'], flow: 'Add strategic color' },
+      'delight': { combinesWith: ['bolder', 'animate'], flow: 'Add personality' },
+      'extract': { flow: 'Create design system elements' },
+      'adapt': { combinesWith: ['normalize', 'clarify'], flow: 'Different devices/contexts' },
+      'onboard': { combinesWith: ['clarify', 'delight'], flow: 'Onboarding & empty states' },
+      'typeset': { combinesWith: ['bolder', 'normalize'], flow: 'Fix typography' },
+      'arrange': { combinesWith: ['distill', 'adapt'], flow: 'Fix layout & spacing' },
+      'overdrive': { combinesWith: ['animate', 'delight'], flow: 'Technically extraordinary effects' }
+    };
+
+    async function loadCommands() {
+      try {
+        const response = await fetch('/api/commands');
+        const commands = await response.json();
+
+        // Group by category
+        const grouped = {};
+        commands.forEach(cmd => {
+          const cat = commandCategories[cmd.id] || 'other';
+          if (!grouped[cat]) grouped[cat] = [];
+          grouped[cat].push(cmd);
+        });
+
+        // Render
+        const container = document.getElementById('commands-container');
+        let html = '';
+
+        categoryOrder.forEach(cat => {
+          if (grouped[cat] && grouped[cat].length > 0) {
+            html += `<section class="category">
+              <h2 class="category-header">${categoryLabels[cat]}</h2>
+              <div class="commands-grid">`;
+
+            grouped[cat].forEach(cmd => {
+              const rel = commandRelationships[cmd.id];
+              let metaHtml = '';
+
+              if (rel) {
+                if (rel.pairs) {
+                  metaHtml = `Pairs with <code>/${rel.pairs}</code>`;
+                } else if (rel.leadsTo) {
+                  metaHtml = `Leads to ${rel.leadsTo.map(c => `<code>/${c}</code>`).join(', ')}`;
+                } else if (rel.combinesWith) {
+                  metaHtml = `Combines with ${rel.combinesWith.map(c => `<code>/${c}</code>`).join(', ')}`;
+                }
+              }
+
+              const isBeta = cmd.id === 'overdrive';
+              html += `<div class="command">
+                <div class="command-name">/${cmd.id}${isBeta ? ' <span style="font-size:0.55rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--color-accent,#c8956c);border:1px solid;border-radius:3px;padding:1px 5px;vertical-align:middle;margin-left:4px;">BETA</span>' : ''}</div>
+                <div class="command-info">
+                  <div class="command-desc">${cmd.description}</div>
+                  ${metaHtml ? `<div class="command-meta">${metaHtml}</div>` : ''}
+                </div>
+              </div>`;
+            });
+
+            html += `</div></section>`;
+          }
+        });
+
+        container.innerHTML = html;
+      } catch (error) {
+        console.error('Error loading commands:', error);
+        document.getElementById('commands-container').innerHTML =
+          '<p style="color: red;">Error loading commands. Please try refreshing.</p>';
+      }
+    }
+
+    loadCommands();
+  </script>
+</body>
+</html>
