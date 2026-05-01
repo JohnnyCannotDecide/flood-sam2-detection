@@ -53,9 +53,21 @@ OVERLAP = 128
 N_FG = 6
 N_BG = 4
 SAM2_SCORE_MIN = 0.3
+SAM2_CONF_MIN_DEFAULT = 0.45
 MIN_WATER_AREA = 300
 MORPH_CLOSE_K = 9
-DEFAULT_POST_DILATE_K = 3
+DEFAULT_POST_DILATE_K = 7
+UNCERTAIN_LOW = 0.4
+UNCERTAIN_HIGH = 0.6
+EDGE_BAND_K = 7
+FG_EDGE_DIST = 4
+WINDOW_LARGE = 640
+WINDOW_LARGE_OVERLAP = 160
+WINDOW_SMALL = 384
+WINDOW_SMALL_OVERLAP = 192
+UNCERTAIN_DENSE_THR = 0.08
+ENABLE_CRF_DEFAULT = True
+CRF_ITER_DEFAULT = 5
 
 # ── LLM 配置（SiliconFlow GLM-4.7）─────────────────────────────────────────
 LLM_API_KEY = os.environ.get("SILICONFLOW_API_KEY", "")
@@ -105,7 +117,8 @@ def mask_cache_path(out_dir, label):
     return os.path.join(out_dir, f"{label}_mask_cache.npz")
 
 
-def save_mask_cache(out_dir, label, water_mask, nodata_mask, area_km2, prob=None, post_dilate_k=0):
+def save_mask_cache(out_dir, label, water_mask, nodata_mask, area_km2, prob=None, post_dilate_k=0,
+                    sam2_conf_min=SAM2_CONF_MIN_DEFAULT):
     """将分割结果持久化，日后可复用。现在也保存概率图。"""
     path = mask_cache_path(out_dir, label)
     save_dict = {
@@ -113,6 +126,8 @@ def save_mask_cache(out_dir, label, water_mask, nodata_mask, area_km2, prob=None
         "nodata_mask": nodata_mask.astype(np.uint8),
         "area_km2": np.array([area_km2]),
         "post_dilate_k": np.array([int(post_dilate_k)], dtype=np.int32),
+        "sam2_conf_min": np.array([float(sam2_conf_min)], dtype=np.float32),
+        "strategy_version": np.array([2], dtype=np.int32),
     }
     if prob is not None:
         save_dict["prob"] = prob.astype(np.float32)
@@ -121,7 +136,8 @@ def save_mask_cache(out_dir, label, water_mask, nodata_mask, area_km2, prob=None
     return path
 
 
-def load_mask_cache(out_dir, label, expected_shape, expected_post_dilate_k=0):
+def load_mask_cache(out_dir, label, expected_shape, expected_post_dilate_k=0,
+                    expected_sam2_conf_min=SAM2_CONF_MIN_DEFAULT):
     """
     尝试加载已缓存的掩膜。
     若缓存存在且尺寸匹配则返回 (water_mask, nodata_mask, area_km2, prob)，否则返回 None。
@@ -136,7 +152,7 @@ def load_mask_cache(out_dir, label, expected_shape, expected_post_dilate_k=0):
         nd = z["nodata_mask"].astype(bool)
         area = float(z["area_km2"][0])
         # 检查是否有 prob 字段和参数信息（新版缓存）
-        if "prob" not in z.files or "post_dilate_k" not in z.files:
+        if "prob" not in z.files or "post_dilate_k" not in z.files or "strategy_version" not in z.files:
             print(f"  [缓存] {label} 旧版缓存（参数不完整），重新分割")
             return None
         prob = z["prob"].astype(np.float32)
@@ -146,6 +162,10 @@ def load_mask_cache(out_dir, label, expected_shape, expected_post_dilate_k=0):
             return None
         if cached_post_dilate_k != int(expected_post_dilate_k):
             print(f"  [缓存] {label} 后处理膨胀参数变化({cached_post_dilate_k}→{expected_post_dilate_k})，重新分割")
+            return None
+        cached_conf = float(z["sam2_conf_min"][0]) if "sam2_conf_min" in z.files else -1.0
+        if abs(cached_conf - float(expected_sam2_conf_min)) > 1e-6:
+            print(f"  [缓存] {label} SAM2置信阈值变化({cached_conf:.2f}→{expected_sam2_conf_min:.2f})，重新分割")
             return None
         print(f"  [缓存] 命中 {label}，直接复用 (面积={area:.3f} km²)")
         return wm, nd, area, prob
@@ -217,7 +237,7 @@ def guided_filter(arr, radius=6, eps=0.02):
     return np.clip((box(a) * g + box(b)) * 255, 0, 255).astype(np.uint8)
 
 
-def build_water_prob(arr, nodata_mask, label, out_dir):
+def build_water_prob(arr, nodata_mask, label, out_dir, return_guidance=False):
     enh = enhance(arr, nodata_mask)
     enh_fill = enh.copy()
     enh_fill[nodata_mask] = 128
@@ -238,6 +258,11 @@ def build_water_prob(arr, nodata_mask, label, out_dir):
     prob[nodata_mask] = 0.0
     prob = cv2.GaussianBlur(prob, (7, 7), 2)
     prob[nodata_mask] = 0.0
+    fg_mask = (prob >= UNCERTAIN_HIGH) & ~nodata_mask
+    bg_mask = (prob <= UNCERTAIN_LOW) & ~nodata_mask
+    uncertain_mask = (prob > UNCERTAIN_LOW) & (prob < UNCERTAIN_HIGH) & ~nodata_mask
+    edge_map = cv2.Canny(gf, 50, 130) > 0
+    edge_map[nodata_mask] = False
     print(f"  [{label}] 水体候选={water_final.sum():,}px  深水={deep_water.sum():,}px  阴影排除={shadow.sum():,}px")
     # 保存概率图可视化
     scale = 8
@@ -255,7 +280,38 @@ def build_water_prob(arr, nodata_mask, label, out_dir):
     plt.savefig(prob_path, dpi=120, bbox_inches="tight")
     plt.close()
     print(f"  [可视化] {os.path.basename(prob_path)} 已保存")
-    return prob, enh, prob_path
+    # 边界信息图
+    edge_vis = np.zeros((*arr.shape, 3), np.uint8)
+    edge_vis[..., 0] = enh
+    edge_vis[..., 1] = enh
+    edge_vis[..., 2] = enh
+    edge_vis[edge_map] = [255, 200, 60]
+    edge_vis[nodata_mask] = [20, 20, 20]
+    edge_path = os.path.join(out_dir, f"{label}_edge_map.png")
+    cv2.imwrite(edge_path, cv2.cvtColor(edge_vis, cv2.COLOR_RGB2BGR))
+
+    # 不确定区域图
+    unc_vis = np.zeros((*arr.shape, 3), np.uint8)
+    unc_vis[..., 0] = enh
+    unc_vis[..., 1] = enh
+    unc_vis[..., 2] = enh
+    unc_vis[uncertain_mask] = [245, 158, 11]
+    unc_vis[fg_mask] = [37, 99, 235]
+    unc_vis[bg_mask] = [100, 116, 139]
+    unc_vis[nodata_mask] = [20, 20, 20]
+    uncertain_path = os.path.join(out_dir, f"{label}_uncertain_map.png")
+    cv2.imwrite(uncertain_path, cv2.cvtColor(unc_vis, cv2.COLOR_RGB2BGR))
+
+    if not return_guidance:
+        return prob, enh, prob_path
+    guidance = {
+        "fg_mask": fg_mask,
+        "bg_mask": bg_mask,
+        "uncertain_mask": uncertain_mask,
+        "edge_map": edge_map,
+    }
+    extra_paths = {"edge_path": edge_path, "uncertain_path": uncertain_path}
+    return prob, enh, prob_path, guidance, extra_paths
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -282,68 +338,209 @@ def sample_prob(prob, n, high=True, min_d=20):
     return sel
 
 
+def sample_structured_points(fg_mask, bg_mask, edge_map, n_fg=N_FG, n_bg=N_BG, min_edge_dist=FG_EDGE_DIST):
+    h, w = fg_mask.shape
+    edge_inv = (~edge_map).astype(np.uint8)
+    dist = cv2.distanceTransform(edge_inv, cv2.DIST_L2, 3)
+    fg_core = fg_mask & (dist > float(min_edge_dist))
+    ys_fg, xs_fg = np.where(fg_core)
+    if len(xs_fg) == 0:
+        ys_fg, xs_fg = np.where(fg_mask)
+    fg_pts = []
+    if len(xs_fg) > 0:
+        idx = np.argsort(np.random.rand(len(xs_fg)))
+        for i in idx:
+            x, y = int(xs_fg[i]), int(ys_fg[i])
+            if not fg_pts or all(np.hypot(x - px, y - py) > 16 for px, py in fg_pts):
+                fg_pts.append([x, y])
+            if len(fg_pts) >= n_fg:
+                break
+    while len(fg_pts) < n_fg:
+        fg_pts.append([np.random.randint(0, w), np.random.randint(0, h)])
+
+    edge_band = cv2.dilate(edge_map.astype(np.uint8), np.ones((EDGE_BAND_K, EDGE_BAND_K), np.uint8), iterations=1) > 0
+    bg_pool = bg_mask | edge_band
+    ys_bg, xs_bg = np.where(bg_pool)
+    bg_pts = []
+    if len(xs_bg) > 0:
+        idx = np.argsort(np.random.rand(len(xs_bg)))
+        for i in idx:
+            x, y = int(xs_bg[i]), int(ys_bg[i])
+            if not bg_pts or all(np.hypot(x - px, y - py) > 14 for px, py in bg_pts):
+                bg_pts.append([x, y])
+            if len(bg_pts) >= n_bg:
+                break
+    while len(bg_pts) < n_bg:
+        bg_pts.append([np.random.randint(0, w), np.random.randint(0, h)])
+    return fg_pts[:n_fg], bg_pts[:n_bg]
+
+
 def cos_win(size):
     t = np.hanning(size).astype(np.float32)
     w = np.outer(t, t)
     return w / max(w.max(), 1e-6)
 
 
-def segment_image(predictor, arr, nodata_mask, prob, enh, label, post_dilate_k=0):
+def _grid_positions(length, window, overlap):
+    step = max(1, int(window - overlap))
+    pos = list(range(0, max(length - window + 1, 1), step))
+    if not pos:
+        pos = [0]
+    if pos[-1] + window < length:
+        pos.append(max(0, length - window))
+    return pos
+
+
+def build_adaptive_windows(h, w, uncertain_mask):
+    ys_l = _grid_positions(h, WINDOW_LARGE, WINDOW_LARGE_OVERLAP)
+    xs_l = _grid_positions(w, WINDOW_LARGE, WINDOW_LARGE_OVERLAP)
+    windows = []
+    for y0 in ys_l:
+        for x0 in xs_l:
+            y1, x1 = min(h, y0 + WINDOW_LARGE), min(w, x0 + WINDOW_LARGE)
+            windows.append((x0, y0, x1, y1, WINDOW_LARGE))
+            roi = uncertain_mask[y0:y1, x0:x1]
+            dens = float(roi.mean()) if roi.size else 0.0
+            if dens >= UNCERTAIN_DENSE_THR:
+                ys_s = _grid_positions(y1 - y0, WINDOW_SMALL, WINDOW_SMALL_OVERLAP)
+                xs_s = _grid_positions(x1 - x0, WINDOW_SMALL, WINDOW_SMALL_OVERLAP)
+                for dy in ys_s:
+                    for dx in xs_s:
+                        sx0, sy0 = x0 + dx, y0 + dy
+                        sx1, sy1 = min(w, sx0 + WINDOW_SMALL), min(h, sy0 + WINDOW_SMALL)
+                        windows.append((sx0, sy0, sx1, sy1, WINDOW_SMALL))
+    uniq = {}
+    for x0, y0, x1, y1, ws in windows:
+        uniq[(x0, y0, x1, y1)] = ws
+    out = [(k[0], k[1], k[2], k[3], uniq[k]) for k in uniq.keys()]
+    out.sort(key=lambda z: (z[1], z[0], z[4]))
+    return out
+
+
+def _prev_fg_from_window(prev_info, x0, y0, x1, y1, max_pts=2):
+    if prev_info is None:
+        return []
+    px0, py0, px1, py1, pmask = prev_info
+    ix0, iy0 = max(x0, px0), max(y0, py0)
+    ix1, iy1 = min(x1, px1), min(y1, py1)
+    if ix1 <= ix0 or iy1 <= iy0:
+        return []
+    sub = pmask[iy0 - py0:iy1 - py0, ix0 - px0:ix1 - px0]
+    ys, xs = np.where(sub)
+    if len(xs) == 0:
+        return []
+    idx = np.argsort(np.random.rand(len(xs)))
+    pts = []
+    for i in idx:
+        gx, gy = int(ix0 + xs[i]), int(iy0 + ys[i])
+        pts.append([gx - x0, gy - y0])
+        if len(pts) >= max_pts:
+            break
+    return pts
+
+
+def dense_crf_refine(image_u8, bin_mask, iterations=5):
+    try:
+        import pydensecrf.densecrf as dcrf
+        from pydensecrf.utils import unary_from_softmax
+
+        h, w = bin_mask.shape
+        img = cv2.cvtColor(image_u8, cv2.COLOR_GRAY2RGB)
+        fg = np.clip(bin_mask.astype(np.float32), 1e-3, 1 - 1e-3)
+        probs = np.stack([1.0 - fg, fg], axis=0)
+        unary = unary_from_softmax(probs)
+        unary = np.ascontiguousarray(unary)
+        d = dcrf.DenseCRF2D(w, h, 2)
+        d.setUnaryEnergy(unary)
+        d.addPairwiseGaussian(sxy=3, compat=3)
+        d.addPairwiseBilateral(sxy=30, srgb=10, rgbim=img, compat=5)
+        q = d.inference(max(1, int(iterations)))
+        out = np.array(q)[1].reshape(h, w)
+        return out > 0.5
+    except Exception:
+        return bin_mask
+
+
+def segment_image(predictor, arr, nodata_mask, prob, enh, label, post_dilate_k=0,
+                  guidance=None, sam2_conf_min=SAM2_CONF_MIN_DEFAULT,
+                  enable_crf=ENABLE_CRF_DEFAULT, crf_iter=CRF_ITER_DEFAULT):
     h, w = arr.shape
     valid_ratio = (~nodata_mask).sum() / nodata_mask.size
     if predictor is None or valid_ratio < 0.15:
         print(f"  [{label}] {'SAM2不可用' if predictor is None else '有效区<15%'}，使用概率图分割")
         raw = (prob > 0.55) & ~nodata_mask
     else:
-        step = WINDOW_SIZE - OVERLAP
-        ys_all = list(range(0, h - WINDOW_SIZE + 1, step))
-        xs_all = list(range(0, w - WINDOW_SIZE + 1, step))
-        if not ys_all or ys_all[-1] + WINDOW_SIZE < h:
-            ys_all.append(max(0, h - WINDOW_SIZE))
-        if not xs_all or xs_all[-1] + WINDOW_SIZE < w:
-            xs_all.append(max(0, w - WINDOW_SIZE))
+        fg_mask = guidance["fg_mask"] if guidance and "fg_mask" in guidance else ((prob >= UNCERTAIN_HIGH) & ~nodata_mask)
+        bg_mask = guidance["bg_mask"] if guidance and "bg_mask" in guidance else ((prob <= UNCERTAIN_LOW) & ~nodata_mask)
+        uncertain_mask = guidance["uncertain_mask"] if guidance and "uncertain_mask" in guidance else (
+            (prob > UNCERTAIN_LOW) & (prob < UNCERTAIN_HIGH) & ~nodata_mask
+        )
+        edge_map = guidance["edge_map"] if guidance and "edge_map" in guidance else (cv2.Canny(enh, 50, 130) > 0)
+        edge_map = edge_map & ~nodata_mask
+        windows = build_adaptive_windows(h, w, uncertain_mask)
         vote = np.zeros((h, w), np.float32)
         wt = np.zeros((h, w), np.float32)
-        win = cos_win(WINDOW_SIZE)
-        total = len(ys_all) * len(xs_all)
+        total = len(windows)
         done = sam2_ok = 0
-        print(f"  [{label}] 滑动窗口: {len(ys_all)}×{len(xs_all)}={total}块")
-        for y0 in ys_all:
-            for x0 in xs_all:
-                y1, x1 = y0 + WINDOW_SIZE, x0 + WINDOW_SIZE
-                done += 1
-                pi, pp, pn = enh[y0:y1, x0:x1], prob[y0:y1, x0:x1], nodata_mask[y0:y1, x0:x1]
-                if (~pn).sum() / pn.size < 0.05 or (pp > 0.5).sum() < 5:
-                    continue
-                pv = pp.copy()
-                pv[pn] = 0.0
+        prev_info = None
+        print(f"  [{label}] 自适应滑动窗口: {total}块（大窗{WINDOW_LARGE}/小窗{WINDOW_SMALL}）")
+        for x0, y0, x1, y1, win_size in windows:
+            done += 1
+            pi, pp, pn = enh[y0:y1, x0:x1], prob[y0:y1, x0:x1], nodata_mask[y0:y1, x0:x1]
+            roi = uncertain_mask[y0:y1, x0:x1] & (~pn)
+            if (~pn).sum() / pn.size < 0.05:
+                continue
+            pv = pp.copy()
+            pv[pn] = 0.0
+            base_mask = pv > 0.55
+            mask = base_mask.copy()
+            score = 0.3
+            if roi.sum() >= 8:
+                fg_w = fg_mask[y0:y1, x0:x1]
+                bg_w = bg_mask[y0:y1, x0:x1]
+                edge_w = edge_map[y0:y1, x0:x1]
+                fg_pts, bg_pts = sample_structured_points(fg_w, bg_w, edge_w, n_fg=N_FG, n_bg=N_BG)
+                prev_pts = _prev_fg_from_window(prev_info, x0, y0, x1, y1, max_pts=2)
+                if prev_pts:
+                    fg_pts = (fg_pts + prev_pts)[: N_FG + 2]
+                point_coords = np.array(fg_pts + bg_pts)
+                point_labels = np.array([1] * len(fg_pts) + [0] * len(bg_pts))
                 try:
                     predictor.set_image(cv2.cvtColor(pi, cv2.COLOR_GRAY2RGB))
                     masks, scores, _ = predictor.predict(
-                        point_coords=np.array(sample_prob(pv, N_FG) + sample_prob(pv, N_BG, high=False)),
-                        point_labels=np.array([1] * N_FG + [0] * N_BG),
+                        point_coords=point_coords,
+                        point_labels=point_labels,
                         multimask_output=True,
                     )
                     best = int(np.argmax(scores))
-                    mask, score = masks[best].astype(bool), float(scores[best])
-                    if score >= SAM2_SCORE_MIN:
+                    cand_mask, cand_score = masks[best].astype(bool), float(scores[best])
+                    if cand_score >= float(sam2_conf_min):
+                        mask[roi] = cand_mask[roi]
+                        score = cand_score
                         sam2_ok += 1
-                    else:
-                        mask, score = pv > 0.55, 0.3
                 except Exception:
-                    mask, score = pv > 0.55, 0.3
-                mask[pn] = False
-                ww = max(score, 0.3)
-                vote[y0:y1, x0:x1] += mask.astype(np.float32) * win * ww
-                wt[y0:y1, x0:x1] += win * ww
-                if done % max(1, total // 8) == 0 or done == total:
-                    print(f"    [{done}/{total}]  SAM2生效={sam2_ok}块")
+                    pass
+            mask[pn] = False
+            win = cos_win(win_size)[: y1 - y0, : x1 - x0]
+            ww = max(score, 0.3)
+            vote[y0:y1, x0:x1] += mask.astype(np.float32) * win * ww
+            wt[y0:y1, x0:x1] += win * ww
+            prev_info = (x0, y0, x1, y1, mask.copy())
+            if done % max(1, total // 8) == 0 or done == total:
+                print(f"    [{done}/{total}]  SAM2生效={sam2_ok}块")
         raw = (vote / np.where(wt > 0, wt, 1e-6)) > 0.5
         raw[nodata_mask] = False
+        # 一致性筛选：去除与概率图高度冲突的低置信区域
+        conf_map = vote / np.where(wt > 0, wt, 1e-6)
+        consistency = 1.0 - np.abs(conf_map - prob)
+        bad = raw & (consistency < 0.25) & (prob < 0.75)
+        raw[bad] = False
 
     k = np.ones((MORPH_CLOSE_K, MORPH_CLOSE_K), np.uint8)
     closed = cv2.morphologyEx(raw.astype(np.uint8), cv2.MORPH_CLOSE, k)
     opened = cv2.morphologyEx(closed, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+    if bool(enable_crf):
+        opened = dense_crf_refine(enh, opened.astype(bool), iterations=int(crf_iter)).astype(np.uint8)
     if int(post_dilate_k) > 0:
         kd = np.ones((int(post_dilate_k), int(post_dilate_k)), np.uint8)
         opened = cv2.dilate(opened, kd, iterations=1)
@@ -947,6 +1144,8 @@ def generate_site(out_dir, labels, results, changes, report_path):
         "result_images": [os.path.basename(r["result_image"]) for r in results],
         "seg_images": [os.path.basename(r["seg_image"]) for r in results],
         "prob_images": [os.path.basename(r["prob_image"]) for r in results],
+        "edge_images": [os.path.basename(r["edge_image"]) for r in results],
+        "uncertain_images": [os.path.basename(r["uncertain_image"]) for r in results],
         "change_images": [os.path.basename(c["image_path"]) for c in changes],
         "change_stats": [{"persistent": c["persistent_km2"],
                           "receding": c["receding_km2"],
@@ -964,13 +1163,15 @@ def generate_site(out_dir, labels, results, changes, report_path):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def run_pipeline(filepaths, labels, ground_truth_paths, out_dir, pixel_area_m2, enable_sam2, force_rerun=False,
-                 post_dilate_k=DEFAULT_POST_DILATE_K):
+                 post_dilate_k=DEFAULT_POST_DILATE_K, sam2_conf_min=SAM2_CONF_MIN_DEFAULT,
+                 enable_crf=ENABLE_CRF_DEFAULT, crf_iter=CRF_ITER_DEFAULT):
     global PIXEL_AREA_M2
     PIXEL_AREA_M2 = pixel_area_m2
     os.makedirs(out_dir, exist_ok=True)
     print("=" * 60)
     print(f"系统启动  图像数量={len(filepaths)}  {'单图分析' if len(filepaths)==1 else '多时相变化检测'}")
     print(f"后处理膨胀核: {int(post_dilate_k)} (0=关闭)")
+    print(f"SAM2高置信阈值: {float(sam2_conf_min):.2f}  CRF: {'开启' if enable_crf else '关闭'}")
     print("=" * 60)
     images, metas, min_h, min_w = load_all_images(filepaths)
     gt_masks = load_ground_truths(ground_truth_paths, len(filepaths), min_h, min_w)
@@ -981,21 +1182,31 @@ def run_pipeline(filepaths, labels, ground_truth_paths, out_dir, pixel_area_m2, 
         nodata_mask = detect_nodata(img, lbl)
         # ── 尝试加载缓存 ──────────────────────────────────────────────────────
         cached = None if force_rerun else load_mask_cache(
-            out_dir, lbl, img.shape, expected_post_dilate_k=post_dilate_k
+            out_dir, lbl, img.shape, expected_post_dilate_k=post_dilate_k,
+            expected_sam2_conf_min=sam2_conf_min
         )
         if cached is not None:
             water_mask, nodata_mask, area_km2, prob = cached
             # 仍需重建 enh 用于可视化（不缓存，避免体积过大）
-            _, enh, prob_image_path = build_water_prob(img, nodata_mask, lbl, out_dir)
+            _, enh, prob_image_path, guidance, extra_paths = build_water_prob(
+                img, nodata_mask, lbl, out_dir, return_guidance=True
+            )
         else:
-            prob, enh, prob_image_path = build_water_prob(img, nodata_mask, lbl, out_dir)
+            prob, enh, prob_image_path, guidance, extra_paths = build_water_prob(
+                img, nodata_mask, lbl, out_dir, return_guidance=True
+            )
             amp_ctx = (torch.autocast(device_type="cuda", dtype=torch.bfloat16)
                        if torch.cuda.is_available() else nullcontext())
             with torch.inference_mode(), amp_ctx:
                 water_mask, area_km2 = segment_image(
-                    predictor, img, nodata_mask, prob, enh, lbl, post_dilate_k=post_dilate_k
+                    predictor, img, nodata_mask, prob, enh, lbl, post_dilate_k=post_dilate_k,
+                    guidance=guidance, sam2_conf_min=sam2_conf_min,
+                    enable_crf=enable_crf, crf_iter=crf_iter
                 )
-            save_mask_cache(out_dir, lbl, water_mask, nodata_mask, area_km2, prob, post_dilate_k=post_dilate_k)
+            save_mask_cache(
+                out_dir, lbl, water_mask, nodata_mask, area_km2, prob,
+                post_dilate_k=post_dilate_k, sam2_conf_min=sam2_conf_min
+            )
 
         result_path, seg_only_path = save_single_result(enh, water_mask, nodata_mask, lbl, area_km2, out_dir)
         shape_features = extract_water_features(water_mask, meta["transform"])
@@ -1005,6 +1216,7 @@ def run_pipeline(filepaths, labels, ground_truth_paths, out_dir, pixel_area_m2, 
             "enhanced": enh, "prob": prob,
             "water_area_km2": area_km2, "shape_features": shape_features,
             "result_image": result_path, "seg_image": seg_only_path, "prob_image": prob_image_path,
+            "edge_image": extra_paths["edge_path"], "uncertain_image": extra_paths["uncertain_path"],
         })
 
     valid_inter = ~results[0]["nodata_mask"]
@@ -1069,6 +1281,9 @@ def process_uploaded_images(upload_payload):
         enable_sam2=bool(upload_payload.get("enable_sam2", True)),
         force_rerun=bool(upload_payload.get("force_rerun", False)),
         post_dilate_k=int(upload_payload.get("post_dilate_k", DEFAULT_POST_DILATE_K)),
+        sam2_conf_min=float(upload_payload.get("sam2_conf_min", SAM2_CONF_MIN_DEFAULT)),
+        enable_crf=bool(upload_payload.get("enable_crf", ENABLE_CRF_DEFAULT)),
+        crf_iter=int(upload_payload.get("crf_iter", CRF_ITER_DEFAULT)),
     )
 
 
@@ -1084,6 +1299,10 @@ def build_parser():
     p.add_argument("--force-rerun", action="store_true", help="忽略缓存，强制重新分割")
     p.add_argument("--post-dilate-k", type=int, default=DEFAULT_POST_DILATE_K,
                    help="后处理膨胀核大小，0表示关闭，建议取1/3/5等小值")
+    p.add_argument("--sam2-conf-min", type=float, default=SAM2_CONF_MIN_DEFAULT,
+                   help="SAM2最小置信阈值（仅用于不确定区域），建议0.45~0.65")
+    p.add_argument("--enable-crf", action="store_true", help="启用可选DenseCRF后处理（环境支持时生效）")
+    p.add_argument("--crf-iter", type=int, default=CRF_ITER_DEFAULT, help="CRF迭代次数")
     return p
 
 
@@ -1102,6 +1321,9 @@ def main():
         enable_sam2=not args.disable_sam2,
         force_rerun=args.force_rerun,
         post_dilate_k=max(0, int(args.post_dilate_k)),
+        sam2_conf_min=float(args.sam2_conf_min),
+        enable_crf=bool(args.enable_crf),
+        crf_iter=max(1, int(args.crf_iter)),
     )
 
 

@@ -160,7 +160,7 @@ python flood_detection.py --input-dir "data" --post-dilate-k 3
 
 ## 网页可视化
 
-网页模板由 [flood_web.py](file:///c:/Users/10196/OneDrive/桌面/workplace/graduate/flood_web.py) 直接生成单文件 HTML，包含：
+网页模板由 [flood_web.py](file:///c:/Users/10196/OneDrive/桌面/workplace/graduate/flood_web.py) 直接生成单文件 HTML包含：
 
 - KPI 指标卡
 - 时序缩略图

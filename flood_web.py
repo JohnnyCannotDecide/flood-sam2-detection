@@ -211,7 +211,13 @@ $('kpi-delta-trend').className='trend '+(netDelta>0.05?'up':netDelta<-0.05?'down
 $('kpi-new-trend').textContent=totalNew>0.1?'↑ 显著':'→ 轻微';
 $('kpi-new-trend').className='trend '+(totalNew>0.1?'up':'warn');
 
-var tlLayers=[{key:'result_images',label:'叠加图',icon:'⊞'},{key:'seg_images',label:'分割掩膜',icon:'◧'},{key:'prob_images',label:'概率图',icon:'◈'}], tlCurrentLayer='result_images';
+var tlLayers=[
+  {key:'result_images',label:'叠加图',icon:'⊞'},
+  {key:'seg_images',label:'分割掩膜',icon:'◧'},
+  {key:'prob_images',label:'概率图',icon:'◈'},
+  {key:'uncertain_images',label:'不确定区',icon:'◉'},
+  {key:'edge_images',label:'边界图',icon:'▦'}
+], tlCurrentLayer='result_images';
 function buildTimeline(layerKey){var tl=$('timeline');tl.innerHTML='';var imgs=D[layerKey]||D.result_images;D.labels.forEach(function(lbl,i){var prev=i>0?areas[i-1]:null,delta=prev!==null?areas[i]-prev:null,dCls=delta===null?'first':delta>0.01?'up':delta<-0.01?'down':'first',dTxt=delta===null?'基准时相':fmt(delta)+' km²';var el=document.createElement('div');el.className='tl-item';el.innerHTML='<div class="tl-index">T'+(i+1)+'</div><img class="tl-img" src="'+(imgs[i]||'')+'" alt="'+lbl+'" loading="lazy"><div class="tl-footer"><div class="tl-label">'+lbl+'</div><div class="tl-area">'+(areas[i]||0).toFixed(3)+' km²</div><div class="tl-delta '+dCls+'">'+dTxt+'</div></div>';tl.appendChild(el);});}
 var btnContainer=$('tl-layer-btns');tlLayers.forEach(function(layer){if(!D[layer.key]||!D[layer.key].length)return;var btn=document.createElement('button');btn.textContent=layer.icon+' '+layer.label;btn.dataset.key=layer.key;btn.style.cssText='padding:3px 10px;font-size:10px;cursor:pointer;border-radius:8px;border:1px solid var(--border);background:#fff;color:var(--muted);font-family:var(--mono);';btn.onclick=function(){tlCurrentLayer=layer.key;buildTimeline(layer.key);btnContainer.querySelectorAll('button').forEach(function(b){var active=b.dataset.key===layer.key;b.style.background=active?'var(--primary-soft)':'#fff';b.style.color=active?'var(--primary)':'var(--muted)';b.style.borderColor=active?'var(--primary)':'var(--border)';});};if(layer.key===tlCurrentLayer){btn.style.background='var(--primary-soft)';btn.style.color='var(--primary)';btn.style.borderColor='var(--primary)';}btnContainer.appendChild(btn);});buildTimeline(tlCurrentLayer);
 
